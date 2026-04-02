@@ -16,6 +16,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
     "pg": "^8.13.1",
     "prop-types": "^15.8.1",

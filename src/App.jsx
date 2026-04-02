@@ -16,6 +16,8 @@ import DataHarkan from './pages/DataHarkan'
 import MasterData from './pages/MasterData'
 import MasterAsset from './pages/MasterAsset'
 import MasterAssetList from './pages/MasterAssetList'
+import MasterAssetUtama from './pages/MasterAssetUtama'
+import FastanahAssetUtama from './pages/FastanahAssetUtama'
 import MasterRumneg from './pages/MasterRumneg'
 import RumnegLagoa from './pages/RumnegLagoa'
 import AssetDetail from './pages/AssetDetail'
@@ -89,6 +91,8 @@ function App() {
         return <PetaFaslan />
       case 'faslan-tanah':
         return <Faslan type="tanah" />
+      case 'faslan-tanah-utama':
+        return <FastanahAssetUtama />
       case 'faslan-kapling':
         return <Faslan type="kapling" />
       case 'faslan-rumneg-lagoa':
@@ -118,6 +122,8 @@ function App() {
           setSelectedAssetCode(kodeAsset)
           setCurrentPage('asset-detail')
         }} />
+      case 'master-asset-utama':
+        return <MasterAssetUtama />
       case 'master-rumneg':
         return <MasterRumneg />
       case 'asset-detail':

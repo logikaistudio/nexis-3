@@ -25,6 +25,7 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileO
                     icon: '📍',
                     children: [
                         { id: 'faslan-tanah', label: 'Aset Tanah', icon: '⛰️' },
+                        { id: 'faslan-tanah-utama', label: 'Aset Tanah Utama', icon: '📍' },
                         { id: 'faslan-kapling', label: 'Aset Kapling', icon: '🏕️' },
                         {
                             id: 'faslan-rumneg-parent',
@@ -82,7 +83,8 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileO
             icon: '⚙️',
             description: 'Data Master',
             children: [
-                { id: 'master-asset', label: 'Asset', icon: '📦' },
+                { id: 'master-asset', label: 'Master Aset', icon: '📦' },
+                { id: 'master-asset-utama', label: 'Master Aset Utama', icon: '📦' },
                 { id: 'master-rumneg', label: 'Aset Rumneg', icon: '🏠' }
             ]
         },
