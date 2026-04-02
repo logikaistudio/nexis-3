@@ -11,31 +11,34 @@ function FastanahAssetUtama() {
         const loadData = async () => {
             setLoading(true);
             try {
-                const res = await fetch('/api/assets/tanah');
+                const res = await fetch('/api/master-asset-utama');
                 if (res.ok) {
                     const rawData = await res.json();
                     
-                    const formattedData = rawData.map(item => {
+                    // Filter specifically for Tanah assets
+                    const tanahData = rawData.filter(item => 
+                        item.jenis_bmn && item.jenis_bmn.toLowerCase().includes('tanah')
+                    );
+                    
+                    const formattedData = tanahData.map(item => {
                         // Gabungkan Alamat
                         const parts = [];
-                        if (item.alamat || item.alamat_detail) parts.push(item.alamat || item.alamat_detail);
-                        if (item.rt_rw) parts.push(`RT/RW: ${item.rt_rw}`);
+                        if (item.kelurahan_desa) parts.push(item.kelurahan_desa);
                         if (item.kecamatan) parts.push(`Kec. ${item.kecamatan}`);
-                        if (item.kabupaten || item.kode_kota) parts.push(item.kabupaten || item.kode_kota);
+                        if (item.kab_kota) parts.push(item.kab_kota);
                         if (item.provinsi) parts.push(`Prov. ${item.provinsi}`);
                         
-                        const alamatLengkap = parts.join(', ') || item.location || '-';
+                        const alamatLengkap = parts.join(', ') || item.lokasi_ruang || '-';
                         
                         // Status Sertifikasi
                         let statusSertifikasi = 'Belum Bersertifikat';
-                        if (item.no_sertifikat || (item.tanah_yg_telah_bersertifikat && item.tanah_yg_telah_bersertifikat > 0)) {
+                        if (item.sertifikat || item.no_identitas) {
                             statusSertifikasi = 'Bersertifikat';
                         }
                         
-                        const area = item.provinsi || 'Provinsi Tidak Diketahui';
+                        const area = item.provinsi || item.uraian_kanwil_djkn || 'Provinsi Tidak Diketahui';
 
-                        // Check if it has a building name or something
-                        const nama_bangunan = item.name || item.nama_barang || 'Aset Tanah';
+                        const nama_bangunan = item.nama_satker || item.uraian_kpknl || 'Aset Tanah';
 
                         return {
                             id: item.id,
@@ -43,8 +46,8 @@ function FastanahAssetUtama() {
                             kode_barang: item.kode_barang || '-',
                             nama_bangunan: nama_bangunan,
                             alamat_lengkap: alamatLengkap,
-                            luas_tanah: parseFloat(item.luas_tanah_seluruhnya || item.luas_tanah || 0),
-                            no_psp: item.no_psp || '-',
+                            luas_tanah: parseFloat(item.luas_tanah_seluruhnya || 0),
+                            no_psp: item.sbsk || '-',
                             status_sertifikasi: statusSertifikasi,
                             area: area
                         };
