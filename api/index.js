@@ -1010,11 +1010,39 @@ async function ensureMasterAssetUtamaTable() {
             CREATE TABLE IF NOT EXISTS master_asset_utama (
                 id SERIAL PRIMARY KEY,
                 unique_key VARCHAR(200) UNIQUE,
-                jenis_bmn VARCHAR(100),
-                kode_satker VARCHAR(100),
+                jenis_bmn TEXT,
+                kode_satker TEXT,
                 nama_satker TEXT,
-                kode_barang VARCHAR(100),
-                nup VARCHAR(50),
+                kode_barang TEXT,
+                nup TEXT,
+                nama_barang TEXT,
+                status_bmn TEXT,
+                merk TEXT,
+                tipe TEXT,
+                kondisi TEXT,
+                umur_aset NUMERIC,
+                intra_extra TEXT,
+                henti_guna TEXT,
+                status_sbsn TEXT,
+                status_bmn_idle TEXT,
+                status_kemitraan TEXT,
+                bpybds TEXT,
+                usulan_barang_hilang TEXT,
+                usulan_barang_rb TEXT,
+                usul_hapus TEXT,
+                hibah_dktp TEXT,
+                konsesi_jasa TEXT,
+                properti_investasi TEXT,
+                jenis_dokumen TEXT,
+                no_dokumen TEXT,
+                no_bpkp TEXT,
+                no_polisi TEXT,
+                status_sertifikasi TEXT,
+                jenis_sertifikat TEXT,
+                no_sertifikat TEXT,
+                nama_sertifikat TEXT,
+                tanggal_buku_pertama TEXT,
+                tanggal_perolehan TEXT,
                 tanggal_penghapusan TEXT,
                 nilai_perolehan_pertama NUMERIC,
                 nilai_mutasi NUMERIC,
@@ -1024,36 +1052,43 @@ async function ensureMasterAssetUtamaTable() {
                 luas_tanah_seluruhnya NUMERIC,
                 luas_tanah_bangunan NUMERIC,
                 luas_tanah_sarana NUMERIC,
-                luas_lahan_kosong NUMERIC,
+                luas_tanah_kosong NUMERIC,
                 luas_bangunan NUMERIC,
                 luas_tapak_bangunan NUMERIC,
-                luas_pemanfataan NUMERIC,
+                luas_pemanfaatan NUMERIC,
+                jumlah_lantai NUMERIC,
+                jumlah_foto NUMERIC,
+                status_bangunan TEXT,
+                no_psp TEXT,
+                tanggal_psp TEXT,
+                alamat TEXT,
+                rt_rw TEXT,
                 kelurahan_desa TEXT,
                 kecamatan TEXT,
                 kab_kota TEXT,
-                kode_kab_kota VARCHAR(50),
+                kode_kab_kota TEXT,
                 provinsi TEXT,
-                kode_provinsi VARCHAR(50),
-                kode_pos VARCHAR(20),
+                kode_provinsi TEXT,
+                kode_pos TEXT,
                 sbsk TEXT,
                 optimalisasi TEXT,
                 penghuni TEXT,
                 pengguna TEXT,
-                kode_kpknl VARCHAR(50),
+                kode_kpknl TEXT,
                 uraian_kpknl TEXT,
                 uraian_kanwil_djkn TEXT,
                 nama_kl TEXT,
                 nama_e1 TEXT,
                 nama_korwil TEXT,
-                kode_register VARCHAR(50),
+                kode_register TEXT,
                 lokasi_ruang TEXT,
-                jenis_identitas VARCHAR(100),
+                jenis_identitas TEXT,
                 no_identitas TEXT,
-                no_stnk VARCHAR(100),
+                no_stnk TEXT,
                 nama_pengguna TEXT,
-                status_pmk VARCHAR(100),
-                longitude VARCHAR(50),
-                latitude VARCHAR(50),
+                status_pmk TEXT,
+                longitude TEXT,
+                latitude TEXT,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
@@ -1129,104 +1164,57 @@ app.post('/api/master-asset-utama/bulk-upsert', async (req, res) => {
                 : `AUTO-${Date.now()}-${i}`;
 
             try {
-                const result = await pool.query(`
-                    INSERT INTO master_asset_utama (
-                        unique_key, jenis_bmn, kode_satker, nama_satker, kode_barang, nup,
-                        tanggal_penghapusan, nilai_perolehan_pertama, nilai_mutasi, nilai_perolehan,
-                        nilai_penyusutan, nilai_buku, luas_tanah_seluruhnya, luas_tanah_bangunan,
-                        luas_tanah_sarana, luas_lahan_kosong, luas_bangunan, luas_tapak_bangunan,
-                        luas_pemanfataan, kelurahan_desa, kecamatan, kab_kota, kode_kab_kota,
-                        provinsi, kode_provinsi, kode_pos, sbsk, optimalisasi, penghuni, pengguna,
-                        kode_kpknl, uraian_kpknl, uraian_kanwil_djkn, nama_kl, nama_e1, nama_korwil,
-                        kode_register, lokasi_ruang, jenis_identitas, no_identitas, no_stnk,
-                        nama_pengguna, status_pmk, longitude, latitude
-                    ) VALUES (
-                        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-                        $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-                        $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
-                        $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
-                        $41,$42,$43,$44,$45
-                    )
-                    ON CONFLICT (unique_key) DO UPDATE SET
-                        jenis_bmn = COALESCE(EXCLUDED.jenis_bmn, master_asset_utama.jenis_bmn),
-                        kode_satker = COALESCE(EXCLUDED.kode_satker, master_asset_utama.kode_satker),
-                        nama_satker = COALESCE(EXCLUDED.nama_satker, master_asset_utama.nama_satker),
-                        kode_barang = COALESCE(EXCLUDED.kode_barang, master_asset_utama.kode_barang),
-                        nup = COALESCE(EXCLUDED.nup, master_asset_utama.nup),
-                        tanggal_penghapusan = COALESCE(EXCLUDED.tanggal_penghapusan, master_asset_utama.tanggal_penghapusan),
-                        nilai_perolehan_pertama = COALESCE(EXCLUDED.nilai_perolehan_pertama, master_asset_utama.nilai_perolehan_pertama),
-                        nilai_mutasi = COALESCE(EXCLUDED.nilai_mutasi, master_asset_utama.nilai_mutasi),
-                        nilai_perolehan = COALESCE(EXCLUDED.nilai_perolehan, master_asset_utama.nilai_perolehan),
-                        nilai_penyusutan = COALESCE(EXCLUDED.nilai_penyusutan, master_asset_utama.nilai_penyusutan),
-                        nilai_buku = COALESCE(EXCLUDED.nilai_buku, master_asset_utama.nilai_buku),
-                        luas_tanah_seluruhnya = COALESCE(EXCLUDED.luas_tanah_seluruhnya, master_asset_utama.luas_tanah_seluruhnya),
-                        luas_tanah_bangunan = COALESCE(EXCLUDED.luas_tanah_bangunan, master_asset_utama.luas_tanah_bangunan),
-                        luas_tanah_sarana = COALESCE(EXCLUDED.luas_tanah_sarana, master_asset_utama.luas_tanah_sarana),
-                        luas_lahan_kosong = COALESCE(EXCLUDED.luas_lahan_kosong, master_asset_utama.luas_lahan_kosong),
-                        luas_bangunan = COALESCE(EXCLUDED.luas_bangunan, master_asset_utama.luas_bangunan),
-                        luas_tapak_bangunan = COALESCE(EXCLUDED.luas_tapak_bangunan, master_asset_utama.luas_tapak_bangunan),
-                        luas_pemanfataan = COALESCE(EXCLUDED.luas_pemanfataan, master_asset_utama.luas_pemanfataan),
-                        kelurahan_desa = COALESCE(EXCLUDED.kelurahan_desa, master_asset_utama.kelurahan_desa),
-                        kecamatan = COALESCE(EXCLUDED.kecamatan, master_asset_utama.kecamatan),
-                        kab_kota = COALESCE(EXCLUDED.kab_kota, master_asset_utama.kab_kota),
-                        kode_kab_kota = COALESCE(EXCLUDED.kode_kab_kota, master_asset_utama.kode_kab_kota),
-                        provinsi = COALESCE(EXCLUDED.provinsi, master_asset_utama.provinsi),
-                        kode_provinsi = COALESCE(EXCLUDED.kode_provinsi, master_asset_utama.kode_provinsi),
-                        kode_pos = COALESCE(EXCLUDED.kode_pos, master_asset_utama.kode_pos),
-                        sbsk = COALESCE(EXCLUDED.sbsk, master_asset_utama.sbsk),
-                        optimalisasi = COALESCE(EXCLUDED.optimalisasi, master_asset_utama.optimalisasi),
-                        penghuni = COALESCE(EXCLUDED.penghuni, master_asset_utama.penghuni),
-                        pengguna = COALESCE(EXCLUDED.pengguna, master_asset_utama.pengguna),
-                        kode_kpknl = COALESCE(EXCLUDED.kode_kpknl, master_asset_utama.kode_kpknl),
-                        uraian_kpknl = COALESCE(EXCLUDED.uraian_kpknl, master_asset_utama.uraian_kpknl),
-                        uraian_kanwil_djkn = COALESCE(EXCLUDED.uraian_kanwil_djkn, master_asset_utama.uraian_kanwil_djkn),
-                        nama_kl = COALESCE(EXCLUDED.nama_kl, master_asset_utama.nama_kl),
-                        nama_e1 = COALESCE(EXCLUDED.nama_e1, master_asset_utama.nama_e1),
-                        nama_korwil = COALESCE(EXCLUDED.nama_korwil, master_asset_utama.nama_korwil),
-                        kode_register = COALESCE(EXCLUDED.kode_register, master_asset_utama.kode_register),
-                        lokasi_ruang = COALESCE(EXCLUDED.lokasi_ruang, master_asset_utama.lokasi_ruang),
-                        jenis_identitas = COALESCE(EXCLUDED.jenis_identitas, master_asset_utama.jenis_identitas),
-                        no_identitas = COALESCE(EXCLUDED.no_identitas, master_asset_utama.no_identitas),
-                        no_stnk = COALESCE(EXCLUDED.no_stnk, master_asset_utama.no_stnk),
-                        nama_pengguna = COALESCE(EXCLUDED.nama_pengguna, master_asset_utama.nama_pengguna),
-                        status_pmk = COALESCE(EXCLUDED.status_pmk, master_asset_utama.status_pmk),
-                        longitude = COALESCE(EXCLUDED.longitude, master_asset_utama.longitude),
-                        latitude = COALESCE(EXCLUDED.latitude, master_asset_utama.latitude),
-                        updated_at = NOW()
-                    RETURNING (xmax = 0) AS inserted
-                `, [
+                const values = [
                     uniqueKey,
                     str(a.jenis_bmn), str(a.kode_satker), str(a.nama_satker), str(a.kode_barang), str(a.nup),
-                    str(a.tanggal_penghapusan), parseNum(a.nilai_perolehan_pertama), parseNum(a.nilai_mutasi), parseNum(a.nilai_perolehan),
-                    parseNum(a.nilai_penyusutan), parseNum(a.nilai_buku), parseNum(a.luas_tanah_seluruhnya), parseNum(a.luas_tanah_bangunan),
-                    parseNum(a.luas_tanah_sarana), parseNum(a.luas_lahan_kosong), parseNum(a.luas_bangunan), parseNum(a.luas_tapak_bangunan),
-                    parseNum(a.luas_pemanfataan), str(a.kelurahan_desa), str(a.kecamatan), str(a.kab_kota), str(a.kode_kab_kota),
-                    str(a.provinsi), str(a.kode_provinsi), str(a.kode_pos), str(a.sbsk), str(a.optimalisasi), str(a.penghuni), str(a.pengguna),
-                    str(a.kode_kpknl), str(a.uraian_kpknl), str(a.uraian_kanwil_djkn), str(a.nama_kl), str(a.nama_e1), str(a.nama_korwil),
-                    str(a.kode_register), str(a.lokasi_ruang), str(a.jenis_identitas), str(a.no_identitas), str(a.no_stnk),
-                    str(a.nama_pengguna), str(a.status_pmk), str(a.longitude), str(a.latitude)
-                ]);
+                    str(a.nama_barang), str(a.status_bmn), str(a.merk), str(a.tipe), str(a.kondisi),
+                    parseNum(a.umur_aset),
+                    str(a.intra_extra), str(a.henti_guna), str(a.status_sbsn), str(a.status_bmn_idle),
+                    str(a.status_kemitraan), str(a.bpybds), str(a.usulan_barang_hilang), str(a.usulan_barang_rb),
+                    str(a.usul_hapus), str(a.hibah_dktp), str(a.konsesi_jasa), str(a.properti_investasi),
+                    str(a.jenis_dokumen), str(a.no_dokumen), str(a.no_bpkp), str(a.no_polisi),
+                    str(a.status_sertifikasi), str(a.jenis_sertifikat), str(a.no_sertifikat), str(a.nama_sertifikat),
+                    str(a.tanggal_buku_pertama), str(a.tanggal_perolehan), str(a.tanggal_penghapusan),
+                    parseNum(a.nilai_perolehan_pertama), parseNum(a.nilai_mutasi), parseNum(a.nilai_perolehan),
+                    parseNum(a.nilai_penyusutan), parseNum(a.nilai_buku),
+                    parseNum(a.luas_tanah_seluruhnya), parseNum(a.luas_tanah_bangunan), parseNum(a.luas_tanah_sarana),
+                    parseNum(a.luas_tanah_kosong), parseNum(a.luas_bangunan), parseNum(a.luas_tapak_bangunan),
+                    parseNum(a.luas_pemanfaatan), parseNum(a.jumlah_lantai), parseNum(a.jumlah_foto),
+                    str(a.status_bangunan), str(a.no_psp), str(a.tanggal_psp), str(a.alamat), str(a.rt_rw),
+                    str(a.kelurahan_desa), str(a.kecamatan), str(a.kab_kota), str(a.kode_kab_kota),
+                    str(a.provinsi), str(a.kode_provinsi), str(a.kode_pos), str(a.sbsk), str(a.optimalisasi),
+                    str(a.penghuni), str(a.pengguna), str(a.kode_kpknl), str(a.uraian_kpknl),
+                    str(a.uraian_kanwil_djkn), str(a.nama_kl), str(a.nama_e1), str(a.nama_korwil),
+                    str(a.kode_register), str(a.lokasi_ruang), str(a.jenis_identitas),
+                    str(a.no_identitas), str(a.no_stnk), str(a.nama_pengguna), str(a.status_pmk),
+                    str(a.longitude), str(a.latitude)
+                ];
 
-                if (result.rows[0]?.inserted) {
-                    results.inserted++;
-                } else {
-                    results.updated++;
+                const result = await pool.query(`
+                    INSERT INTO master_asset_utama (
+                        unique_key, jenis_bmn, kode_satker, nama_satker, kode_barang, nup, nama_barang, status_bmn, merk, tipe, kondisi, umur_aset, intra_extra, henti_guna, status_sbsn, status_bmn_idle, status_kemitraan, bpybds, usulan_barang_hilang, usulan_barang_rb, usul_hapus, hibah_dktp, konsesi_jasa, properti_investasi, jenis_dokumen, no_dokumen, no_bpkp, no_polisi, status_sertifikasi, jenis_sertifikat, no_sertifikat, nama_sertifikat, tanggal_buku_pertama, tanggal_perolehan, tanggal_penghapusan, nilai_perolehan_pertama, nilai_mutasi, nilai_perolehan, nilai_penyusutan, nilai_buku, luas_tanah_seluruhnya, luas_tanah_bangunan, luas_tanah_sarana, luas_tanah_kosong, luas_bangunan, luas_tapak_bangunan, luas_pemanfaatan, jumlah_lantai, jumlah_foto, status_bangunan, no_psp, tanggal_psp, alamat, rt_rw, kelurahan_desa, kecamatan, kab_kota, kode_kab_kota, provinsi, kode_provinsi, kode_pos, sbsk, optimalisasi, penghuni, pengguna, kode_kpknl, uraian_kpknl, uraian_kanwil_djkn, nama_kl, nama_e1, nama_korwil, kode_register, lokasi_ruang, jenis_identitas, no_identitas, no_stnk, nama_pengguna, status_pmk, longitude, latitude
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80)
+                    ON CONFLICT (unique_key) DO UPDATE SET
+                        jenis_bmn = EXCLUDED.jenis_bmn, kode_satker = EXCLUDED.kode_satker, nama_satker = EXCLUDED.nama_satker, kode_barang = EXCLUDED.kode_barang, nup = EXCLUDED.nup, nama_barang = EXCLUDED.nama_barang, status_bmn = EXCLUDED.status_bmn, merk = EXCLUDED.merk, tipe = EXCLUDED.tipe, kondisi = EXCLUDED.kondisi, umur_aset = EXCLUDED.umur_aset, intra_extra = EXCLUDED.intra_extra, henti_guna = EXCLUDED.henti_guna, status_sbsn = EXCLUDED.status_sbsn, status_bmn_idle = EXCLUDED.status_bmn_idle, status_kemitraan = EXCLUDED.status_kemitraan, bpybds = EXCLUDED.bpybds, usulan_barang_hilang = EXCLUDED.usulan_barang_hilang, usulan_barang_rb = EXCLUDED.usulan_barang_rb, usul_hapus = EXCLUDED.usul_hapus, hibah_dktp = EXCLUDED.hibah_dktp, konsesi_jasa = EXCLUDED.konsesi_jasa, properti_investasi = EXCLUDED.properti_investasi, jenis_dokumen = EXCLUDED.jenis_dokumen, no_dokumen = EXCLUDED.no_dokumen, no_bpkp = EXCLUDED.no_bpkp, no_polisi = EXCLUDED.no_polisi, status_sertifikasi = EXCLUDED.status_sertifikasi, jenis_sertifikat = EXCLUDED.jenis_sertifikat, no_sertifikat = EXCLUDED.no_sertifikat, nama_sertifikat = EXCLUDED.nama_sertifikat, tanggal_buku_pertama = EXCLUDED.tanggal_buku_pertama, tanggal_perolehan = EXCLUDED.tanggal_perolehan, tanggal_penghapusan = EXCLUDED.tanggal_penghapusan, nilai_perolehan_pertama = EXCLUDED.nilai_perolehan_pertama, nilai_mutasi = EXCLUDED.nilai_mutasi, nilai_perolehan = EXCLUDED.nilai_perolehan, nilai_penyusutan = EXCLUDED.nilai_penyusutan, nilai_buku = EXCLUDED.nilai_buku, luas_tanah_seluruhnya = EXCLUDED.luas_tanah_seluruhnya, luas_tanah_bangunan = EXCLUDED.luas_tanah_bangunan, luas_tanah_sarana = EXCLUDED.luas_tanah_sarana, luas_tanah_kosong = EXCLUDED.luas_tanah_kosong, luas_bangunan = EXCLUDED.luas_bangunan, luas_tapak_bangunan = EXCLUDED.luas_tapak_bangunan, luas_pemanfaatan = EXCLUDED.luas_pemanfaatan, jumlah_lantai = EXCLUDED.jumlah_lantai, jumlah_foto = EXCLUDED.jumlah_foto, status_bangunan = EXCLUDED.status_bangunan, no_psp = EXCLUDED.no_psp, tanggal_psp = EXCLUDED.tanggal_psp, alamat = EXCLUDED.alamat, rt_rw = EXCLUDED.rt_rw, kelurahan_desa = EXCLUDED.kelurahan_desa, kecamatan = EXCLUDED.kecamatan, kab_kota = EXCLUDED.kab_kota, kode_kab_kota = EXCLUDED.kode_kab_kota, provinsi = EXCLUDED.provinsi, kode_provinsi = EXCLUDED.kode_provinsi, kode_pos = EXCLUDED.kode_pos, sbsk = EXCLUDED.sbsk, optimalisasi = EXCLUDED.optimalisasi, penghuni = EXCLUDED.penghuni, pengguna = EXCLUDED.pengguna, kode_kpknl = EXCLUDED.kode_kpknl, uraian_kpknl = EXCLUDED.uraian_kpknl, uraian_kanwil_djkn = EXCLUDED.uraian_kanwil_djkn, nama_kl = EXCLUDED.nama_kl, nama_e1 = EXCLUDED.nama_e1, nama_korwil = EXCLUDED.nama_korwil, kode_register = EXCLUDED.kode_register, lokasi_ruang = EXCLUDED.lokasi_ruang, jenis_identitas = EXCLUDED.jenis_identitas, no_identitas = EXCLUDED.no_identitas, no_stnk = EXCLUDED.no_stnk, nama_pengguna = EXCLUDED.nama_pengguna, status_pmk = EXCLUDED.status_pmk, longitude = EXCLUDED.longitude, latitude = EXCLUDED.latitude,
+                        updated_at = NOW()
+                    RETURNING *
+                `, values);
+
+                if (result.rows[0] && result.rows[0].id) {
+                    // Check if it was an insert or update by comparing created_at vs updated_at (approximately)
+                    const row = result.rows[0];
+                    const isNew = Math.abs(new Date(row.updated_at) - new Date(row.created_at)) < 1000;
+                    if (isNew) results.inserted++; else results.updated++;
                 }
-            } catch (err) {
+            } catch (rowErr) {
                 results.failed++;
-                if (results.errors.length < 10) {
-                    results.errors.push({ row: i + 1, error: err.message.substring(0, 150) });
-                }
+                results.errors.push({ row: i + 1, error: rowErr.message });
+                console.error(`[MASTER ASSET UTAMA IMPORT] Row ${i + 1} error:`, rowErr.message);
             }
         }
 
         const elapsed = Date.now() - startTime;
-        console.log(`[MASTER ASSET UTAMA IMPORT] Done in ${elapsed}ms: inserted=${results.inserted}, updated=${results.updated}, failed=${results.failed}`);
-
-        if (results.failed > 10) {
-            results.errors.push({ row: '-', error: `... dan ${results.failed - 10} error lainnya` });
-        }
-
+        console.log(`[MASTER ASSET UTAMA IMPORT] Done in ${elapsed}ms:`, results);
         res.json(results);
     } catch (err) {
         console.error('[MASTER ASSET UTAMA IMPORT] Fatal error:', err);
@@ -1234,28 +1222,72 @@ app.post('/api/master-asset-utama/bulk-upsert', async (req, res) => {
     }
 });
 
-// --- BEKANG API ---
-app.get('/api/supplies', async (req, res) => {
+// PUT update single master asset utama
+app.put('/api/master-asset-utama/:id', async (req, res) => {
+    const { id } = req.params;
+    const a = req.body;
     try {
-        const result = await pool.query('SELECT * FROM supplies ORDER BY created_at DESC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+        await ensureMasterAssetUtamaTable();
+        const parseNum = (val) => {
+            if (val === null || val === undefined || val === '') return null;
+            const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+            return isNaN(num) ? null : num;
+        };
+        const str = (val) => (val === null || val === undefined || val === '') ? null : String(val).trim();
 
-app.post('/api/supplies', async (req, res) => {
-    const { name, code, category, stock, unit, status, last_update } = req.body;
-    try {
-        const result = await pool.query(
-            'INSERT INTO supplies (name, code, category, stock, unit, status, last_update) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [name, code, category, stock, unit, status, last_update]
-        );
+        const result = await pool.query(`
+            UPDATE master_asset_utama SET
+                jenis_bmn=$1, kode_satker=$2, nama_satker=$3, kode_barang=$4, nup=$5,
+                nama_barang=$6, status_bmn=$7, merk=$8, tipe=$9, kondisi=$10, umur_aset=$11,
+                intra_extra=$12, henti_guna=$13, status_sbsn=$14, status_bmn_idle=$15, status_kemitraan=$16,
+                bpybds=$17, usulan_barang_hilang=$18, usulan_barang_rb=$19, usul_hapus=$20,
+                hibah_dktp=$21, konsesi_jasa=$22, properti_investasi=$23,
+                jenis_dokumen=$24, no_dokumen=$25, no_bpkp=$26, no_polisi=$27,
+                status_sertifikasi=$28, jenis_sertifikat=$29, no_sertifikat=$30, nama_sertifikat=$31,
+                tanggal_buku_pertama=$32, tanggal_perolehan=$33, tanggal_penghapusan=$34,
+                nilai_perolehan_pertama=$35, nilai_mutasi=$36, nilai_perolehan=$37,
+                nilai_penyusutan=$38, nilai_buku=$39,
+                luas_tanah_seluruhnya=$40, luas_tanah_bangunan=$41, luas_tanah_sarana=$42,
+                luas_tanah_kosong=$43, luas_bangunan=$44, luas_tapak_bangunan=$45, luas_pemanfaatan=$46,
+                jumlah_lantai=$47, jumlah_foto=$48, status_bangunan=$49,
+                no_psp=$50, tanggal_psp=$51, alamat=$52, rt_rw=$53,
+                kelurahan_desa=$54, kecamatan=$55, kab_kota=$56, kode_kab_kota=$57,
+                provinsi=$58, kode_provinsi=$59, kode_pos=$60, sbsk=$61, optimalisasi=$62,
+                penghuni=$63, pengguna=$64, kode_kpknl=$65, uraian_kpknl=$66,
+                uraian_kanwil_djkn=$67, nama_kl=$68, nama_e1=$69, nama_korwil=$70,
+                kode_register=$71, lokasi_ruang=$72, jenis_identitas=$73,
+                no_identitas=$74, no_stnk=$75, nama_pengguna=$76, status_pmk=$77,
+                longitude=$78, latitude=$79, updated_at=NOW()
+            WHERE id=$80 RETURNING *
+        `, [
+            str(a.jenis_bmn), str(a.kode_satker), str(a.nama_satker), str(a.kode_barang), str(a.nup),
+            str(a.nama_barang), str(a.status_bmn), str(a.merk), str(a.tipe), str(a.kondisi), parseNum(a.umur_aset),
+            str(a.intra_extra), str(a.henti_guna), str(a.status_sbsn), str(a.status_bmn_idle), str(a.status_kemitraan),
+            str(a.bpybds), str(a.usulan_barang_hilang), str(a.usulan_barang_rb), str(a.usul_hapus),
+            str(a.hibah_dktp), str(a.konsesi_jasa), str(a.properti_investasi),
+            str(a.jenis_dokumen), str(a.no_dokumen), str(a.no_bpkp), str(a.no_polisi),
+            str(a.status_sertifikasi), str(a.jenis_sertifikat), str(a.no_sertifikat), str(a.nama_sertifikat),
+            str(a.tanggal_buku_pertama), str(a.tanggal_perolehan), str(a.tanggal_penghapusan),
+            parseNum(a.nilai_perolehan_pertama), parseNum(a.nilai_mutasi), parseNum(a.nilai_perolehan),
+            parseNum(a.nilai_penyusutan), parseNum(a.nilai_buku),
+            parseNum(a.luas_tanah_seluruhnya), parseNum(a.luas_tanah_bangunan), parseNum(a.luas_tanah_sarana),
+            parseNum(a.luas_tanah_kosong), parseNum(a.luas_bangunan), parseNum(a.luas_tapak_bangunan), parseNum(a.luas_pemanfaatan),
+            parseNum(a.jumlah_lantai), parseNum(a.jumlah_foto), str(a.status_bangunan),
+            str(a.no_psp), str(a.tanggal_psp), str(a.alamat), str(a.rt_rw),
+            str(a.kelurahan_desa), str(a.kecamatan), str(a.kab_kota), str(a.kode_kab_kota),
+            str(a.provinsi), str(a.kode_provinsi), str(a.kode_pos), str(a.sbsk), str(a.optimalisasi),
+            str(a.penghuni), str(a.pengguna), str(a.kode_kpknl), str(a.uraian_kpknl),
+            str(a.uraian_kanwil_djkn), str(a.nama_kl), str(a.nama_e1), str(a.nama_korwil),
+            str(a.kode_register), str(a.lokasi_ruang), str(a.jenis_identitas),
+            str(a.no_identitas), str(a.no_stnk), str(a.nama_pengguna), str(a.status_pmk),
+            str(a.longitude), str(a.latitude),
+            id
+        ]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Asset not found' });
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('[MASTER ASSET UTAMA] UPDATE error:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 });
 
