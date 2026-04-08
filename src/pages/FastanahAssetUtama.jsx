@@ -4,6 +4,10 @@ function FastanahAssetUtama() {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Editor State
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [currentItem, setCurrentItem] = useState(null);
+
     const FONT_SYSTEM = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
     const FONT_MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
 
@@ -72,6 +76,11 @@ function FastanahAssetUtama() {
         const num = parseFloat(value);
         if (isNaN(num)) return value;
         return new Intl.NumberFormat('id-ID').format(num) + ' m²';
+    };
+
+    const handleRowClick = (item) => {
+        setCurrentItem(item);
+        setIsEditorOpen(true);
     };
 
     // Calculate summaries
@@ -187,7 +196,17 @@ function FastanahAssetUtama() {
                                             </thead>
                                             <tbody>
                                                 {areaAssets.map((asset, assetIdx) => (
-                                                    <tr key={asset.id || assetIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <tr 
+                                                        key={asset.id || assetIdx} 
+                                                        onClick={() => handleRowClick(asset)}
+                                                        style={{ 
+                                                            borderBottom: '1px solid #f1f5f9',
+                                                            cursor: 'pointer',
+                                                            transition: 'background 0.2s ease'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    >
                                                         <td style={tdStyle}>
                                                             <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#0f172a' }}>{asset.nup}</div>
                                                             <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: FONT_MONO, marginTop: '2px' }}>{asset.kode_barang}</div>
@@ -243,6 +262,81 @@ function FastanahAssetUtama() {
                     )}
                 </div>
             )}
+
+            {/* DETAIL MODAL */}
+            {isEditorOpen && currentItem && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }} onClick={() => setIsEditorOpen(false)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflow: 'auto', padding: '24px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Detail Aset Tanah</h2>
+                            <button onClick={() => setIsEditorOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '8px' }}>📝 Identitas Aset</div>
+                            <div>
+                                <label style={labelStyle}>NUP</label>
+                                <input readOnly value={currentItem.nup || '-'} style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Kode Barang</label>
+                                <input readOnly value={currentItem.kode_barang || '-'} style={inputStyle} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={labelStyle}>Nama Bangunan</label>
+                                <input readOnly value={currentItem.nama_bangunan || '-'} style={inputStyle} />
+                            </div>
+
+                            <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginTop: '16px', marginBottom: '8px' }}>📍 Lokasi & Fisik</div>
+                            <div>
+                                <label style={labelStyle}>Area</label>
+                                <input readOnly value={currentItem.area || '-'} style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Luas Tanah</label>
+                                <input readOnly value={formatLuas(currentItem.luas_tanah)} style={inputStyle} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={labelStyle}>Alamat Lengkap</label>
+                                <textarea readOnly value={currentItem.alamat_lengkap || '-'} style={{...inputStyle, minHeight: '60px', resize: 'vertical'}} />
+                            </div>
+
+                            <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginTop: '16px', marginBottom: '8px' }}>📄 Legalitas & Sertifikasi</div>
+                            <div>
+                                <label style={labelStyle}>No. PSP</label>
+                                <input readOnly value={currentItem.no_psp || '-'} style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Status Sertifikasi</label>
+                                <input readOnly value={currentItem.status_sertifikasi || '-'} style={{
+                                    ...inputStyle,
+                                    color: currentItem.status_sertifikasi === 'Bersertifikat' ? '#166534' : '#991b1b',
+                                    fontWeight: '600',
+                                    backgroundColor: currentItem.status_sertifikasi === 'Bersertifikat' ? '#dcfce7' : '#fee2e2',
+                                    borderColor: currentItem.status_sertifikasi === 'Bersertifikat' ? '#bbf7d0' : '#fecaca'
+                                }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Jenis Dokumen</label>
+                                <input readOnly value={currentItem.jenis_dokumen || '-'} style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>No. Dokumen / Sertifikat</label>
+                                <input readOnly value={currentItem.no_dokumen || '-'} style={inputStyle} />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                            <button onClick={() => setIsEditorOpen(false)} style={{ padding: '8px 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -273,6 +367,25 @@ const thStyle = {
 const tdStyle = {
     padding: '16px 12px',
     verticalAlign: 'top',
+};
+
+const labelStyle = { 
+    display: 'block', 
+    marginBottom: '6px', 
+    fontSize: '0.85rem', 
+    color: '#64748b', 
+    fontWeight: '500' 
+};
+
+const inputStyle = { 
+    width: '100%', 
+    padding: '10px 12px', 
+    border: '1px solid #cbd5e1', 
+    borderRadius: '6px', 
+    fontSize: '0.9rem', 
+    color: '#334155', 
+    backgroundColor: '#f8fafc', 
+    boxSizing: 'border-box' 
 };
 
 export default FastanahAssetUtama;

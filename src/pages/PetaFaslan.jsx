@@ -38,6 +38,17 @@ const bangunanIcon = new L.Icon({
     popupAnchor: [0, -10]
 })
 
+const perumahanIcon = new L.Icon({
+    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="6" fill="#10b981" stroke="#fff" stroke-width="2"/>
+        </svg>
+    `),
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    popupAnchor: [0, -10]
+})
+
 // Configurable Node Settings moved to state
 // const NODE_COLOR = '#ef4444' // Red
 // const NODE_SIZE = 14
@@ -111,6 +122,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
     const [assetsBangunan, setAssetsBangunan] = useState([])
     const [assetsFaslabuh, setAssetsFaslabuh] = useState([])
     const [assetsHarkan, setAssetsHarkan] = useState([])
+    const [assetsRumneg, setAssetsRumneg] = useState([])
     const [selectedFaslabuh, setSelectedFaslabuh] = useState(null)
     const [loading, setLoading] = useState(true)
     const [center, setCenter] = useState([-6.1754, 106.8272]) // Default: Jakarta (Monas)
@@ -327,12 +339,24 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                 const finalEndpointHarkan = import.meta.env.PROD ? endpointHarkan : `http://localhost:3001${endpointHarkan}`
                 const dataHarkan = await safeFetchStatus(finalEndpointHarkan)
                 
+                // Fetch Rumneg from API
+                const endpointRumneg = '/api/assets/rumneg'
+                const finalEndpointRumneg = import.meta.env.PROD ? endpointRumneg : `http://localhost:3001${endpointRumneg}`
+                const dataRumneg = await safeFetchStatus(finalEndpointRumneg)
+                
                 const validHarkan = dataHarkan.filter(item => {
                     const lat = parseFloat(item.latitude)
                     const lon = parseFloat(item.longitude)
                     return !isNaN(lat) && !isNaN(lon)
                 })
                 setAssetsHarkan(validHarkan)
+
+                const validRumneg = dataRumneg.filter(item => {
+                    const lat = parseFloat(item.latitude)
+                    const lon = parseFloat(item.longitude)
+                    return !isNaN(lat) && !isNaN(lon)
+                })
+                setAssetsRumneg(validRumneg)
 
                 // Filter assets_tanah — koordinat dari field 'location' (DMS) atau 'coordinates'
                 const validTanah = dataTanah.filter(asset => {
@@ -533,6 +557,16 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                             width: '10px',
                             height: '10px',
                             borderRadius: '50%',
+                            background: '#10b981'
+                        }}></div>
+                        <span style={{ fontSize: '13px', color: '#64748b' }}>Perumahan</span>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>{assetsRumneg.length}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
                             background: HARKAN_NODE_COLOR
                         }}></div>
                         <span style={{ fontSize: '13px', color: '#64748b' }}>Harkan</span>
@@ -547,7 +581,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                     }}>
                         <span style={{ fontSize: '13px', color: '#64748b' }}>Total</span>
                         <span style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>
-                            {assetsTanah.length + assetsBangunan.length + assetsFaslabuh.length + assetsHarkan.length}
+                            {assetsTanah.length + assetsBangunan.length + assetsFaslabuh.length + assetsHarkan.length + assetsRumneg.length}
                         </span>
                     </div>
 
@@ -807,12 +841,14 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                 </div>
                                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsFaslabuh.length}</span>
                             </div>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsHarkan.length}</span>
+                            </div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{width: '12px', height: '12px', borderRadius: '50%', background: HARKAN_NODE_COLOR}}></div>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Harkan</span>
+                                    <div style={{width: '12px', height: '12px', borderRadius: '50%', background: '#10b981'}}></div>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Perumahan</span>
                                 </div>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsHarkan.length}</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsRumneg.length}</span>
                             </div>
                         </div>
                     )}
@@ -952,6 +988,65 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                 <div style={{ fontSize: '16px', fontWeight: '700', color: '#f97316' }}>
                                                     {formatLuas(asset.luas_bangunan || asset.luas)} m²
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            )
+                        })}
+
+                        {/* Markers for Rumah Negara (Perumahan) */}
+                        {assetsRumneg.map((asset) => {
+                            const lat = parseFloat(asset.latitude)
+                            const lon = parseFloat(asset.longitude)
+                            if (isNaN(lat) || isNaN(lon)) return null
+
+                            return (
+                                <Marker key={`rumneg-${asset.id}`} position={[lat, lon]} icon={perumahanIcon}>
+                                    <Popup>
+                                        <div style={{ minWidth: '220px' }}>
+                                            <div style={{
+                                                fontSize: '14px',
+                                                fontWeight: '700',
+                                                color: '#10b981',
+                                                marginBottom: '8px',
+                                                paddingBottom: '8px',
+                                                borderBottom: '2px solid #10b981'
+                                            }}>
+                                                🏡 RUMAH NEGARA (RUMNEG)
+                                            </div>
+                                            <div style={{ marginBottom: '6px' }}>
+                                                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>Penghuni</div>
+                                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937' }}>
+                                                    {asset.occupant_name || '-'}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                                    {asset.occupant_rank} {asset.occupant_nrp ? `(${asset.occupant_nrp})` : ''}
+                                                </div>
+                                            </div>
+                                            <div style={{ marginBottom: '6px' }}>
+                                                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>Perumahan & Alamat</div>
+                                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{asset.area || '-'}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.3' }}>{asset.alamat_detail || '-'}</div>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>Tipe/Gol</div>
+                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>{asset.tipe_rumah || '-'}/{asset.golongan || '-'}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>Kondisi</div>
+                                                    <div style={{ 
+                                                        fontSize: '11px', 
+                                                        fontWeight: '700',
+                                                        color: asset.kondisi?.toLowerCase() === 'baik' ? '#166534' : '#991b1b',
+                                                        textTransform: 'uppercase'
+                                                    }}>{asset.kondisi || '-'}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ marginTop: '6px' }}>
+                                                <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>No SIP</div>
+                                                <div style={{ fontSize: '12px', color: '#374151' }}>{asset.no_sip || '-'}</div>
                                             </div>
                                         </div>
                                     </Popup>

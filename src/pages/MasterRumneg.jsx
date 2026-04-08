@@ -663,6 +663,16 @@ function MasterRumneg() {
                                 <label className="form-label">Alamat Lengkap</label>
                                 <input className="form-input" value={currentItem.alamat_detail || ''} onChange={(e) => handleInputChange('alamat_detail', e.target.value)} />
                             </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', gridColumn: 'span 2' }}>
+                                <div>
+                                    <label className="form-label">Latitude</label>
+                                    <input className="form-input" value={currentItem.latitude || ''} onChange={(e) => handleInputChange('latitude', e.target.value)} placeholder="Contoh: -6.123456" />
+                                </div>
+                                <div>
+                                    <label className="form-label">Longitude</label>
+                                    <input className="form-input" value={currentItem.longitude || ''} onChange={(e) => handleInputChange('longitude', e.target.value)} placeholder="Contoh: 106.123456" />
+                                </div>
+                            </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label className="form-label">Tipe Rumah</label>
