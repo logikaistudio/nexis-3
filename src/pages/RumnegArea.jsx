@@ -289,6 +289,23 @@ function RumnegArea({ area }) {
                                 </div>
                             </div>
                             <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', marginBottom: '6px', color: '#475569' }}>Koordinat Lokasi (Peta)</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input
+                                        placeholder="Latitude"
+                                        value={currentItem.latitude || ''}
+                                        onChange={(e) => handleInputChange('latitude', e.target.value)}
+                                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    />
+                                    <input
+                                        placeholder="Longitude"
+                                        value={currentItem.longitude || ''}
+                                        onChange={(e) => handleInputChange('longitude', e.target.value)}
+                                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                    />
+                                </div>
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', marginBottom: '6px', color: '#475569' }}>Kondisi Bangunan</label>
                                 <select
                                     value={currentItem.kondisi || ''}

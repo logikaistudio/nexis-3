@@ -841,6 +841,11 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                 </div>
                                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsFaslabuh.length}</span>
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{width: '12px', height: '12px', borderRadius: '50%', background: HARKAN_NODE_COLOR}}></div>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>Harkan</span>
+                                </div>
                                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{assetsHarkan.length}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
