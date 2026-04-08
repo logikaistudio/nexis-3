@@ -2382,10 +2382,10 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
                     kondisi, keterangan
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
                 [
-                    item.occupant_name, item.occupant_rank, item.occupant_nrp, item.area, item.alamat_detail,
-                    item.longitude, item.latitude, item.status_penghuni, item.no_sip, item.tgl_sip,
-                    item.tipe_rumah, item.golongan, item.tahun_buat, item.asal_perolehan, item.mendapat_fasdin,
-                    item.kondisi, item.keterangan
+                    item.occupant_name ?? null, item.occupant_rank ?? null, item.occupant_nrp ?? null, item.area ?? null, item.alamat_detail ?? null,
+                    item.longitude ?? null, item.latitude ?? null, item.status_penghuni ?? null, item.no_sip ?? null, item.tgl_sip ?? null,
+                    item.tipe_rumah ?? null, item.golongan ?? null, item.tahun_buat ?? null, item.asal_perolehan ?? null, item.mendapat_fasdin ?? null,
+                    item.kondisi ?? null, item.keterangan ?? null
                 ]
             );
         }
@@ -2419,10 +2419,10 @@ app.put('/api/assets/rumneg/:id', async (req, res) => {
                 kondisi=$16, keterangan=$17, updated_at=NOW()
              WHERE id=$18 RETURNING *`,
             [
-                occupant_name, occupant_rank, occupant_nrp, area, alamat_detail,
-                longitude, latitude, status_penghuni, no_sip, tgl_sip,
-                tipe_rumah, golongan, tahun_buat, asal_perolehan, mendapat_fasdin,
-                kondisi, keterangan, id
+                occupant_name ?? null, occupant_rank ?? null, occupant_nrp ?? null, area ?? null, alamat_detail ?? null,
+                longitude ?? null, latitude ?? null, status_penghuni ?? null, no_sip ?? null, tgl_sip ?? null,
+                tipe_rumah ?? null, golongan ?? null, tahun_buat ?? null, asal_perolehan ?? null, mendapat_fasdin ?? null,
+                kondisi ?? null, keterangan ?? null, id
             ]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });

@@ -4,36 +4,54 @@ import { useState, useEffect, useMemo } from 'react'
 function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileOpen, setMobileOpen, onLogout, user }) {
     // State untuk menyimpan ID menu yang sedang expanded (bisa multiple levels)
     const [expandedMenus, setExpandedMenus] = useState(['faslan', 'fastanah-parent', 'faslan-rumneg-parent', 'satharkan'])
+    // rumnegAreas: array of { name: string, count: number }
     const [rumnegAreas, setRumnegAreas] = useState([])
 
-    useEffect(() => {
-        const fetchRumnegAreas = async () => {
-            try {
-                const response = await fetch('/api/assets/rumneg');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        // Extract unique non-empty areas (case-insensitive deduplication)
-                        const areaSet = new Set();
-                        const uniqueAreas = [];
-                        data.forEach(item => {
-                            const areaName = (item.area || '').trim();
-                            if (areaName) {
-                                const lower = areaName.toLowerCase();
-                                if (!areaSet.has(lower)) {
-                                    areaSet.add(lower);
-                                    uniqueAreas.push(areaName);
-                                }
-                            }
-                        });
-                        setRumnegAreas(uniqueAreas.sort());
-                    }
+    const fetchRumnegAreas = async () => {
+        try {
+            const response = await fetch('/api/assets/rumneg');
+            if (!response.ok) return;
+            const data = await response.json();
+            if (!Array.isArray(data)) return;
+
+            // Build a map: areaName (case-insensitive key) -> { name, count }
+            const areaMap = new Map();
+            data.forEach(item => {
+                const areaName = (item.area || '').trim();
+                if (!areaName) return;
+                const lower = areaName.toLowerCase();
+                if (areaMap.has(lower)) {
+                    areaMap.get(lower).count += 1;
+                } else {
+                    areaMap.set(lower, { name: areaName, count: 1 });
                 }
-            } catch (error) {
-                console.error('Error fetching rumneg areas:', error);
-            }
-        };
+            });
+
+            // Sort alphabetically by area name
+            const sorted = Array.from(areaMap.values()).sort((a, b) =>
+                a.name.localeCompare(b.name, 'id')
+            );
+            setRumnegAreas(sorted);
+        } catch (error) {
+            console.error('Error fetching rumneg areas:', error);
+        }
+    };
+
+    useEffect(() => {
         fetchRumnegAreas();
+
+        // Auto-refresh every 30 seconds so sidebar stays in sync
+        const interval = setInterval(fetchRumnegAreas, 30000);
+
+        // Instantly refresh when MasterRumneg dispatches 'rumneg-updated' event
+        // (fired after import or save completes)
+        const handleRumnegUpdated = () => fetchRumnegAreas();
+        window.addEventListener('rumneg-updated', handleRumnegUpdated);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('rumneg-updated', handleRumnegUpdated);
+        };
     }, []);
 
     const menuItems = useMemo(() => [
@@ -62,13 +80,15 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileO
                             id: 'faslan-rumneg-parent',
                             label: 'Aset Rumah Negara',
                             icon: '🏠',
-                            children: rumnegAreas.length > 0 ? rumnegAreas.map(area => ({
-                                id: `faslan-rumneg:dynamic:${area}`,
-                                label: `Perumahan ${area}`,
-                                icon: '🏘️'
-                            })) : [
-                                { id: 'faslan-rumneg:dynamic:Lagoa', label: 'Perumahan Lagoa', icon: '🏘️' } // Default if empty
-                            ]
+                            children: rumnegAreas.length > 0
+                                ? rumnegAreas.map(area => ({
+                                    id: `faslan-rumneg:dynamic:${area.name}`,
+                                    label: `${area.name} (${area.count})`,
+                                    icon: '🏘️'
+                                }))
+                                : [
+                                    { id: 'faslan-rumneg:dynamic:Lagoa', label: 'Lagoa (0)', icon: '🏘️' }
+                                ]
                         },
                         { id: 'faslan-kerjasama', label: 'Pemanfaatan Aset', icon: '🤝' }
                     ]

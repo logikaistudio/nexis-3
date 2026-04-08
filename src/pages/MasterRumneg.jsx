@@ -22,14 +22,11 @@ function MasterRumneg() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Gunakan relative path agar diproxy vite ke backend yang benar
             const response = await fetch('/api/assets/rumneg');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
             const result = await response.json();
-            // Validasi format data array
             setData(Array.isArray(result) ? result : []);
-            setSelectedIds([]); // Reset selection on refresh
+            setSelectedIds([]);
         } catch (error) {
             console.error('Error fetching data:', error);
             setData([]);
@@ -62,7 +59,7 @@ function MasterRumneg() {
 
     const toggleSelectionMode = () => {
         setIsSelectionMode(!isSelectionMode);
-        setSelectedIds([]); // Reset saat toggle
+        setSelectedIds([]);
     };
 
     // --- DELETE LOGIC ---
@@ -81,7 +78,8 @@ function MasterRumneg() {
             if (response.ok) {
                 alert('Data terpilih berhasil dihapus');
                 fetchData();
-                setIsSelectionMode(false); // Keluar mode hapus setelah sukses
+                setIsSelectionMode(false);
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
             }
         } catch (error) {
             console.error('Error deleting multiple:', error);
@@ -103,6 +101,7 @@ function MasterRumneg() {
             if (response.ok) {
                 alert('Semua data berhasil dihapus');
                 fetchData();
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
             }
         } catch (error) {
             console.error('Error deleting all:', error);
@@ -124,6 +123,7 @@ function MasterRumneg() {
             if (response.ok) {
                 setIsEditorOpen(false);
                 fetchData();
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
             }
         } catch (error) {
             console.error('Error deleting item:', error);
@@ -136,14 +136,12 @@ function MasterRumneg() {
     // --- EDITOR LOGIC ---
     const handleRowClick = (item) => {
         if (isSelectionMode) {
-            // Jika mode seleksi, klik baris = select/deselect
             if (selectedIds.includes(item.id)) {
                 setSelectedIds(selectedIds.filter(id => id !== item.id));
             } else {
                 setSelectedIds([...selectedIds, item.id]);
             }
         } else {
-            // Mode normal = buka editor
             setCurrentItem({ ...item });
             setIsNewItem(false);
             setIsEditorOpen(true);
@@ -162,7 +160,7 @@ function MasterRumneg() {
 
         try {
             const url = isNewItem
-                ? '/api/assets/rumneg/bulk' // Menggunakan bulk dulu untuk single insert
+                ? '/api/assets/rumneg/bulk'
                 : `/api/assets/rumneg/${currentItem.id}`;
 
             const method = isNewItem ? 'POST' : 'PUT';
@@ -177,6 +175,8 @@ function MasterRumneg() {
             if (response.ok) {
                 setIsEditorOpen(false);
                 fetchData();
+                // Notify Sidebar to refresh rumneg child menu
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
             } else {
                 alert('Gagal menyimpan data');
             }
@@ -196,31 +196,28 @@ function MasterRumneg() {
     const downloadTemplate = () => {
         const template = [
             {
-                'NAMA': 'Contoh Nama',
-                'PANGKAT/KORPS': 'Mayor Laut',
-                'NRP/NIP': '123456',
-                'PERUMAHAN': 'Lagoa',
-                'ALAMAT': 'Jl. Contoh No. 1',
-                'LON': '106.8456',
-                'LAT': '-6.2088',
-                'STATUS PENGHUNI': 'Dinas',
-                'NO SIP': 'SIP/001/2024',
-                'TGL SIP': '2024-01-15',
-                'TIPE': 'A',
-                'GOLONGAN': 'III',
-                'TAHUN BUAT': '2020',
-                'ASAL PEROLEHAN': 'Pembelian',
-                'MENDAPAT FASDIN': 'Dapat',
-                'KONDISI': 'Baik',
-                'KETERANGAN': 'Contoh keterangan'
+                'Perumahan': 'Sunter',
+                'Nama': 'Contoh Nama',
+                'Alamat': 'Jl. Contoh No. 1',
+                'Status Penghuni': 'Dinas',
+                'No.SIP': 'SIP/001/2024',
+                'Tipe': 'A',
+                'Golongan': 'III',
+                'Tahun Buat': '2020',
+                'Asal Perolehan': 'Pembelian',
+                'Mendapat Fasdin': 'Dapat',
+                'Kondisi': 'Baik',
+                'Keterangan': 'Contoh keterangan',
+                'Tanggal SIP': '2024-01-15',
+                'Pangkat': 'Mayor Laut',
+                'NRP': '123456'
             }
         ];
         const ws = XLSX.utils.json_to_sheet(template);
-        // Auto width untuk template
         const wscols = [
-            { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 30 },
-            { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
-            { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }
+            { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 30 },
+            { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 12 },
+            { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }
         ];
         ws['!cols'] = wscols;
 
@@ -255,8 +252,6 @@ function MasterRumneg() {
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
-
-        // Auto Column Width Calculation
         const wscols = Object.keys(exportData[0]).map(key => {
             return { wch: Math.max(key.length, 10, ...exportData.map(row => String(row[key] || '').length)) + 2 };
         });
@@ -283,30 +278,30 @@ function MasterRumneg() {
                 for (const key of keys) {
                     const normalizedKey = key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     const foundKey = rowKeys.find(k => k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === normalizedKey);
-                    if (foundKey) return row[foundKey];
+                    if (foundKey !== undefined) return row[foundKey] ?? '';
                 }
                 return '';
             };
 
             const transformedData = jsonData.map((row, index) => ({
                 id: `temp-${index}`,
-                occupant_name: getValue(row, ['NAMA', 'nama', 'Nama Lengkap', 'Nama']),
-                occupant_rank: getValue(row, ['PANGKAT/KORPS', 'pangkat', 'korps', 'Pangkat']),
-                occupant_nrp: getValue(row, ['NRP/NIP', 'nrp', 'nip', 'NRP', 'NIP']),
-                area: getValue(row, ['PERUMAHAN', 'perumahan', 'Komplek', 'Area']),
-                alamat_detail: getValue(row, ['ALAMAT', 'alamat', 'Lokasi']),
-                longitude: getValue(row, ['LON', 'lon', 'longitude', 'Longitude']),
-                latitude: getValue(row, ['LAT', 'lat', 'latitude', 'Latitude']),
-                status_penghuni: getValue(row, ['STATUS PENGHUNI', 'status penghuni', 'Status']),
-                no_sip: getValue(row, ['NO SIP/TANGGAL', 'no sip/tanggal', 'nosiptanggal', 'no. sip/tanggal', 'NO SIP', 'no sip', 'nomor sip', 'nosip']),
-                tgl_sip: getValue(row, ['TGL SIP', 'tglsip', 'tanggal sip', 'tgl', 'tanggal']),
-                tipe_rumah: getValue(row, ['TIPE', 'tipe', 'Type']),
-                golongan: getValue(row, ['GOLONGAN', 'golongan', 'Gol']),
-                tahun_buat: getValue(row, ['TAHUN BUAT', 'tahun buat', 'Tahun']),
-                asal_perolehan: getValue(row, ['ASAL PEROLEHAN', 'asal perolehan', 'Asal']),
-                mendapat_fasdin: getValue(row, ['MENDAPAT FASDIN', 'mendapat fasdin', 'Fasdin']),
-                kondisi: getValue(row, ['KONDISI', 'kondisi']),
-                keterangan: getValue(row, ['KETERANGAN', 'keterangan', 'Ket'])
+                occupant_name: getValue(row, ['NAMA', 'nama', 'Nama Lengkap', 'Nama']) || null,
+                occupant_rank: getValue(row, ['PANGKAT/KORPS', 'pangkat', 'korps', 'Pangkat']) || null,
+                occupant_nrp: getValue(row, ['NRP/NIP', 'nrp', 'nip', 'NRP', 'NIP']) || null,
+                area: getValue(row, ['PERUMAHAN', 'perumahan', 'Komplek', 'Area']) || null,
+                alamat_detail: getValue(row, ['ALAMAT', 'alamat', 'Lokasi']) || null,
+                longitude: getValue(row, ['LON', 'lon', 'longitude', 'Longitude']) || null,
+                latitude: getValue(row, ['LAT', 'lat', 'latitude', 'Latitude']) || null,
+                status_penghuni: getValue(row, ['STATUS PENGHUNI', 'status penghuni', 'Status']) || null,
+                no_sip: getValue(row, ['NO SIP/TANGGAL', 'no sip/tanggal', 'nosiptanggal', 'no. sip/tanggal', 'NO SIP', 'no sip', 'nomor sip', 'nosip']) || null,
+                tgl_sip: getValue(row, ['TGL SIP', 'tglsip', 'tanggal sip', 'tgl', 'tanggal']) || null,
+                tipe_rumah: getValue(row, ['TIPE', 'tipe', 'Type']) || null,
+                golongan: getValue(row, ['GOLONGAN', 'golongan', 'Gol']) || null,
+                tahun_buat: getValue(row, ['TAHUN BUAT', 'tahun buat', 'Tahun']) || null,
+                asal_perolehan: getValue(row, ['ASAL PEROLEHAN', 'asal perolehan', 'Asal']) || null,
+                mendapat_fasdin: getValue(row, ['MENDAPAT FASDIN', 'mendapat fasdin', 'Fasdin']) || null,
+                kondisi: getValue(row, ['KONDISI', 'kondisi']) || null,
+                keterangan: getValue(row, ['KETERANGAN', 'keterangan', 'Ket']) || null
             }));
 
             setPreviewData(transformedData);
@@ -315,25 +310,32 @@ function MasterRumneg() {
     };
 
     const handleImport = async () => {
+        if (previewData.length === 0) return;
         setLoading(true);
         try {
+            // Strip the temp id before sending
+            const payload = previewData.map(({ id, ...rest }) => rest);
             const response = await fetch('/api/assets/rumneg/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(previewData)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
-                alert('Data berhasil diimport!');
+                const result = await response.json();
+                alert(`Data berhasil diimport! ${result.count} baris tersimpan.`);
                 setImportModalOpen(false);
                 setPreviewData([]);
                 fetchData();
+                // Notify Sidebar to refresh rumneg child menu
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
             } else {
-                alert('Gagal import data');
+                const errData = await response.json().catch(() => ({}));
+                alert(`Gagal import data: ${errData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Error importing:', error);
-            alert('Error saat import data');
+            alert('Error saat import data: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -348,7 +350,6 @@ function MasterRumneg() {
                     <p className="page-subtitle">Kelola data rumah negara dan penghuni</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {/* Delete Actions */}
                     <button
                         onClick={toggleSelectionMode}
                         style={{
@@ -402,7 +403,6 @@ function MasterRumneg() {
                         </button>
                     )}
 
-                    {/* Import/Export Actions */}
                     <button
                         onClick={handleExportData}
                         style={{
@@ -511,7 +511,7 @@ function MasterRumneg() {
                     <table style={{
                         width: '100%',
                         borderCollapse: 'collapse',
-                        fontSize: '0.75rem', // Smaller font for efficiency
+                        fontSize: '0.75rem',
                         fontFamily: 'Inter, sans-serif'
                     }}>
                         <thead>
@@ -555,7 +555,7 @@ function MasterRumneg() {
                                             cursor: 'pointer',
                                             transition: 'background 0.1s',
                                             background: selectedIds.includes(row.id) ? '#e0f2fe' : 'white',
-                                            height: '32px' // Compact row height
+                                            height: '32px'
                                         }}
                                         onMouseEnter={(e) => { if (!selectedIds.includes(row.id)) e.currentTarget.style.background = '#f8fafc' }}
                                         onMouseLeave={(e) => { if (!selectedIds.includes(row.id)) e.currentTarget.style.background = 'white' }}
@@ -621,7 +621,7 @@ function MasterRumneg() {
                 </div>
             </div>
 
-            {/* EDITOR MODAL (Same as before but compact) */}
+            {/* EDITOR MODAL */}
             {isEditorOpen && currentItem && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -634,7 +634,6 @@ function MasterRumneg() {
                         </div>
 
                         <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            {/* Identitas Penghuni */}
                             <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '0.9rem', marginTop: '4px' }}>👤 Identitas Penghuni</div>
                             <div>
                                 <label className="form-label">Nama Lengkap</label>
@@ -655,7 +654,6 @@ function MasterRumneg() {
                                 <input className="form-input" value={currentItem.status_penghuni || ''} onChange={(e) => handleInputChange('status_penghuni', e.target.value)} />
                             </div>
 
-                            {/* Lokasi */}
                             <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '0.9rem', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>📍 Lokasi & Fisik</div>
                             <div>
                                 <label className="form-label">Nama Perumahan/Area</label>
@@ -692,7 +690,6 @@ function MasterRumneg() {
                                 </div>
                             </div>
 
-                            {/* Administrasi */}
                             <div style={{ gridColumn: 'span 2', fontWeight: '600', color: '#0f172a', fontSize: '0.9rem', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>📄 Administrasi</div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <div style={{ flex: 2 }}>
@@ -720,7 +717,6 @@ function MasterRumneg() {
                                 <label className="form-label">Keterangan Tambahan</label>
                                 <textarea className="form-input" value={currentItem.keterangan || ''} onChange={(e) => handleInputChange('keterangan', e.target.value)} style={{ minHeight: '60px' }} />
                             </div>
-
 
                             <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
                                 {!isNewItem ? (
@@ -769,8 +765,19 @@ function MasterRumneg() {
                             </>
                         )}
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <button onClick={() => { setImportModalOpen(false); setPreviewData([]); }} style={{ padding: '10px 20px', background: '#64748b', color: 'white', borderRadius: '8px', border: 'none' }}>Batal</button>
-                            <button onClick={handleImport} disabled={previewData.length === 0} style={{ padding: '10px 20px', background: previewData.length === 0 ? '#cbd5e1' : '#10b981', color: 'white', borderRadius: '8px', border: 'none' }}>Import {previewData.length} Data</button>
+                            <button
+                                onClick={() => { setImportModalOpen(false); setPreviewData([]); }}
+                                style={{ padding: '10px 20px', background: '#64748b', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleImport}
+                                disabled={previewData.length === 0 || loading}
+                                style={{ padding: '10px 20px', background: previewData.length === 0 ? '#cbd5e1' : '#10b981', color: 'white', borderRadius: '8px', border: 'none', cursor: previewData.length === 0 ? 'not-allowed' : 'pointer' }}
+                            >
+                                {loading ? 'Mengimport...' : `Import ${previewData.length} Data`}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -784,6 +791,7 @@ function MasterRumneg() {
                     border-radius: 6px;
                     font-size: 0.875rem;
                     transition: border-color 0.2s;
+                    box-sizing: border-box;
                 }
                 .form-input:focus {
                     outline: none;

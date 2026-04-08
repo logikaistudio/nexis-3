@@ -75,6 +75,7 @@ function RumnegArea({ area }) {
             if (response.ok) {
                 setIsEditorOpen(false);
                 fetchData(); // Refresh data to reflect changes
+                window.dispatchEvent(new CustomEvent('rumneg-updated'));
                 alert('Data berhasil diperbarui');
             } else {
                 alert('Gagal menyimpan data');
