@@ -740,6 +740,10 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                         {filtered.map(asset => {
                                             const hasCoord = asset.latitude && asset.longitude && !isNaN(parseFloat(asset.latitude)) && !isNaN(parseFloat(asset.longitude))
                                             const isSelected = selectedAssetForCoord?.id === asset.id
+                                            const type = asset.jenis_bmn || 'ASET'
+                                            const lokasi = asset.kab_kota || asset.kelurahan_desa || '-'
+                                            const coordDisplay = hasCoord ? `${parseFloat(asset.latitude).toFixed(5)}, ${parseFloat(asset.longitude).toFixed(5)}` : ''
+                                            
                                             return (
                                                 <div
                                                     key={asset.id}
