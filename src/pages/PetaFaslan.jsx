@@ -30,16 +30,42 @@ const mapLanalColor = (lanal) => {
     return '#64748b' // default slate
 }
     
-const createDynamicIcon = (color) => {
-    // Ukuran 2x jadi 14x14
-    return new L.Icon({
-        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+const createDynamicIcon = (color, identifikasiAset = '') => {
+    const identId = String(identifikasiAset).toLowerCase();
+    
+    let svgContent = '';
+    
+    if (identId.includes('mako') || identId.includes('markas')) {
+        // Kotak sama sisi
+        svgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+                <rect x="2" y="2" width="10" height="10" fill="${color}" stroke="#fff" stroke-width="2"/>
+            </svg>
+        `;
+    } else if (identId.includes('poliklinik') || identId.includes('rumah sakit') || identId.includes('klinik') || identId.includes('balai kesehatan')) {
+        // Bulat dengan palang putih di tengah
+        svgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="7" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+                <path d="M8 3.5v9M3.5 8h9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        `;
+    } else {
+        // Default bulat
+        svgContent = `
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
                 <circle cx="7" cy="7" r="6" fill="${color}" stroke="#fff" stroke-width="2"/>
             </svg>
-        `),
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
+        `;
+    }
+
+    const size = svgContent.includes('width="16"') ? [16, 16] : [14, 14];
+    const anchor = svgContent.includes('width="16"') ? [8, 8] : [7, 7];
+
+    return new L.Icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa(svgContent),
+        iconSize: size,
+        iconAnchor: anchor,
         popupAnchor: [0, -10]
     })
 }
@@ -194,6 +220,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
         return saved ? JSON.parse(saved) : { color: '#ef4444', size: 24 } // Red, larger size
     })
     const [showSettings, setShowSettings] = useState(false)
+    const [lightboxSrc, setLightboxSrc] = useState(null) // Photo lightbox
 
     // Save Settings
     useEffect(() => {
@@ -947,7 +974,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                             const lanalColor = mapLanalColor(asset.lanal)
 
                             return (
-                                <Marker key={`tanah-${asset.id || asset.unique_key}`} position={coords} icon={createDynamicIcon(lanalColor)}>
+                                <Marker key={`tanah-${asset.id || asset.unique_key}`} position={coords} icon={createDynamicIcon(lanalColor, asset.identifikasi_aset || asset.name || asset.nama_satker)}>
                                     <Popup className="custom-popup" minWidth={280}>
                                         <div style={{ fontFamily: 'Inter, sans-serif' }}>
                                             <div style={{
@@ -1006,16 +1033,15 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                             <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px' }}>Foto ({photos.length})</div>
                                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                                                                 {photos.slice(0, 4).map((p, idx) => {
-                                                                    const srcStr = typeof p === 'string' ? p : p.base64;
+                                                                    const srcStr = typeof p === 'string' 
+                                                                        ? (p.startsWith('data:') || p.startsWith('http') ? p : `/uploads/${p}`) 
+                                                                        : (p.base64 || p.url || p.data || '');
                                                                     return (
                                                                         <img 
                                                                             key={idx} 
                                                                             src={srcStr} 
                                                                             alt={`Foto ${idx+1}`}
-                                                                            onClick={() => {
-                                                                                const w = window.open();
-                                                                                w.document.write(`<body style="margin:0;display:flex;justify-content:center;align-items:center;background:#000;height:100vh;"><img src="${srcStr}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body>`);
-                                                                            }}
+                                                                            onClick={() => setLightboxSrc(srcStr)}
                                                                             style={{ 
                                                                                 width: '100%', 
                                                                                 aspectRatio: '1', 
@@ -1025,6 +1051,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                                                 border: '1px solid #e2e8f0',
                                                                                 transition: 'transform 0.2s',
                                                                             }}
+                                                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Img'; }}
                                                                             onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
                                                                             onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                                                                         />
@@ -1226,7 +1253,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                     {photos.slice(0, 2).map((photo, idx) => {
                                                         // Handle object or string photo
                                                         const imgSrc = typeof photo === 'string'
-                                                            ? `/uploads/${photo}`
+                                                            ? (photo.startsWith('data:') || photo.startsWith('http') ? photo : `/uploads/${photo}`)
                                                             : (photo.url || photo.data || '')
 
                                                         return (
@@ -1240,7 +1267,8 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                                 <img
                                                                     src={imgSrc}
                                                                     alt={`Foto ${idx + 1}`}
-                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                    onClick={() => setLightboxSrc(imgSrc)}
+                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
                                                                     onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Img' }}
                                                                 />
                                                             </div>
@@ -1595,7 +1623,9 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                             )
 
                                             return photos.map((photo, idx) => {
-                                                const imgSrc = typeof photo === 'string' ? `/uploads/${photo}` : (photo.url || photo.data || '')
+                                                const imgSrc = typeof photo === 'string' 
+                                                    ? (photo.startsWith('data:') || photo.startsWith('http') ? photo : `/uploads/${photo}`) 
+                                                    : (photo.url || photo.data || '')
                                                 return (
                                                     <div key={idx} style={{
                                                         borderRadius: '16px',
@@ -1614,7 +1644,8 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                                         <img
                                                             src={imgSrc}
                                                             alt={`Foto ${idx + 1}`}
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            onClick={() => setLightboxSrc(imgSrc)}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
                                                             onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=Error' }}
                                                         />
                                                     </div>
@@ -1688,6 +1719,59 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                     </div>
                 )
             }
+
+            {/* Lightbox Modal */}
+            {lightboxSrc && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 10000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'zoom-out',
+                    padding: '20px'
+                }} onClick={() => setLightboxSrc(null)}>
+                    <img 
+                        src={lightboxSrc} 
+                        alt="Preview" 
+                        style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%', 
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        }} 
+                        onClick={e => e.stopPropagation()}
+                    />
+                    <button 
+                        onClick={() => setLightboxSrc(null)}
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            right: '20px',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            color: 'white',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            fontSize: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
         </div >
     )
 }
