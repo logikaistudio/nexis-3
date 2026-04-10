@@ -146,7 +146,7 @@ function FastanahAssetUtama() {
                     let width = img.width;
                     let height = img.height;
                     
-                    const targetRatio = 9 / 16; // Fix rasio ke 9:16 sesuai permintaan
+                    const targetRatio = 16 / 9; // Fix rasio ke 16:9 sesuai permintaan (Landscape)
                     
                     let sx = 0, sy = 0, sWidth = width, sHeight = height;
                     const currentRatio = width / height;
@@ -544,14 +544,14 @@ function FastanahAssetUtama() {
                             <div style={{ ...sectionHeaderStyle, justifyContent: 'space-between' }}>
                                 <span>📷 Foto Aset</span>
                                 <span style={{ fontWeight: '400', fontSize: '0.72rem', color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>
-                                    JPG/PNG · Auto Crop (9:16) · Maks 4 Foto ({photos.length}/4)
+                                    JPG/PNG · Auto Crop (16:9) · Maks 4 Foto ({photos.length}/4)
                                 </span>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '10px' }}>
                                 {[0, 1, 2, 3].map(idx => (
                                     <div key={idx} style={{
-                                        aspectRatio: '3/4', borderRadius: '10px', overflow: 'hidden',
+                                        aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden',
                                         position: 'relative',
                                         border: photos[idx] ? '2px solid #60a5fa' : '2px dashed #cbd5e1',
                                         background: photos[idx] ? '#000' : '#f8fafc',
