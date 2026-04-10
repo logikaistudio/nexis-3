@@ -541,7 +541,7 @@ function FastanahAssetUtama() {
                                         placeholder="Contoh: -6.121435"
                                         style={{ ...edInputStyle, fontFamily: FONT_MONO }}
                                     />
-
+                                </div>
                             </div>
 
                             <div style={{ ...sectionHeaderStyle, justifyContent: 'space-between' }}>
