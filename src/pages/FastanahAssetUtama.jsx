@@ -146,9 +146,7 @@ function FastanahAssetUtama() {
                     let width = img.width;
                     let height = img.height;
                     
-                    let targetRatio;
-                    if (width >= height) targetRatio = 16 / 9;  // Landscape
-                    else targetRatio = 9 / 16;  // Portrait
+                    const targetRatio = 9 / 16; // Fix rasio ke 9:16 sesuai permintaan
                     
                     let sx = 0, sy = 0, sWidth = width, sHeight = height;
                     const currentRatio = width / height;
@@ -382,7 +380,7 @@ function FastanahAssetUtama() {
                                                         </td>
                                                         <td style={tdStyle}>
                                                             <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.85rem' }}>{asset.nama_bangunan}</div>
-                                                            <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '3px', lineHeight: '1.4' }}>{asset.alamat_lengkap}</div>
+                                                            <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '3px', lineHeight: '1.4' }}>{asset.alamat || asset.alamat_lengkap}</div>
                                                         </td>
                                                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600', color: '#334155', whiteSpace: 'nowrap' }}>
                                                             {formatLuas(asset.luas_tanah)}
@@ -551,7 +549,7 @@ function FastanahAssetUtama() {
                             <div style={{ ...sectionHeaderStyle, justifyContent: 'space-between' }}>
                                 <span>📷 Foto Aset</span>
                                 <span style={{ fontWeight: '400', fontSize: '0.72rem', color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>
-                                    JPG/PNG · Auto Crop (16:9/9:16) · Maks 4 Foto ({photos.length}/4)
+                                    JPG/PNG · Auto Crop (9:16) · Maks 4 Foto ({photos.length}/4)
                                 </span>
                             </div>
 
