@@ -175,7 +175,7 @@ function FastanahAssetUtama() {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, newWidth, newHeight);
                     
-                    resolve(canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85));
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = ev.target.result;
             };
@@ -487,8 +487,12 @@ function FastanahAssetUtama() {
                                     <input readOnly value={currentItem.nama_bangunan} style={roInputStyle} />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={roLabelStyle}>Alamat Lengkap</label>
-                                    <textarea readOnly value={currentItem.alamat_lengkap} style={{ ...roInputStyle, minHeight: '52px', resize: 'none' }} />
+                                    <label style={edLabelStyle}>Alamat Lengkap</label>
+                                    <textarea
+                                        value={editData.alamat || currentItem.alamat_lengkap}
+                                        onChange={e => setEditData(p => ({ ...p, alamat: e.target.value }))}
+                                        style={{ ...edInputStyle, minHeight: '52px', resize: 'vertical' }}
+                                    />
                                 </div>
                             </div>
 
@@ -534,16 +538,7 @@ function FastanahAssetUtama() {
                                         placeholder="Contoh: -6.121435"
                                         style={{ ...edInputStyle, fontFamily: FONT_MONO }}
                                     />
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={edLabelStyle}>Alamat (Edit Area)</label>
-                                    <textarea
-                                        value={editData.alamat}
-                                        onChange={e => setEditData(p => ({ ...p, alamat: e.target.value }))}
-                                        placeholder="Contoh: Jl. RE Martadinata No.1"
-                                        style={{ ...edInputStyle, minHeight: '52px', resize: 'vertical' }}
-                                    />
-                                </div>
+
                             </div>
 
                             <div style={{ ...sectionHeaderStyle, justifyContent: 'space-between' }}>
