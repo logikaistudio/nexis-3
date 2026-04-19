@@ -33,6 +33,46 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// Test endpoint untuk verifikasi setup
+app.get('/api/test', async (req, res) => {
+    try {
+        // Test database connection
+        const dbTest = await pool.query('SELECT NOW()');
+        
+        // Test users table
+        let usersCount = 0;
+        try {
+            const usersResult = await pool.query('SELECT COUNT(*) as count FROM users');
+            usersCount = parseInt(usersResult.rows[0].count);
+        } catch (err) {
+            usersCount = 0;
+        }
+
+        res.json({
+            status: 'success',
+            message: 'NEXIS-3 API is working',
+            database: {
+                connected: true,
+                timestamp: dbTest.rows[0].now
+            },
+            users: {
+                table_exists: usersCount >= 0,
+                count: usersCount
+            },
+            environment: {
+                node_env: process.env.NODE_ENV,
+                database_url: process.env.DATABASE_URL ? 'Present' : 'Missing'
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Setup verification failed',
+            error: err.message
+        });
+    }
+});
+
 // Database Setup Endpoint (for production first-time setup)
 app.get('/api/setup', async (req, res) => {
     try {
