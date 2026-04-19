@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import { read, utils, writeFile } from 'xlsx'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 function Faslan({ type }) {
@@ -11,12 +13,13 @@ function Faslan({ type }) {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedIds, setSelectedIds] = useState([])
     const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
     const fileInputRef = useRef(null)
 
     // Data loading logic
     const fetchData = async () => {
         try {
-            let endpoint = type === 'tanah' ? '/api/assets/tanah' : (type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan')
+            let endpoint = type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan'
 
             // For Rumneg Lagoa, we use the bangunan endpoint
             if (type === 'rumneg-lagoa') {
@@ -53,22 +56,6 @@ function Faslan({ type }) {
                         return searchStr.includes('lagoa')
                     })
                     setData(filtered)
-                } else if (type === 'tanah') {
-                    // Mapping field assets_tanah:
-                    // - coordinates: ambil dari field 'location' yang berisi DMS string
-                    // - alamat/name: ambil dari field 'name', 'alamat_detail', 'area'
-                    const mapped = result.map(item => ({
-                        ...item,
-                        // Koordinat dari field 'location' (bukan alamat, melainkan string DMS)
-                        coordinates: item.location || item.coordinates || '-',
-                        // Alamat dari name, bukan location
-                        location: item.alamat_detail || item.area || item.name || '-',
-                        // Pastikan name tetap ada
-                        name: item.name || item.nama_barang || '-',
-                        // Luas dari luas_tanah_seluruhnya
-                        luas: item.luas_tanah_seluruhnya || item.luas || '0',
-                    }))
-                    setData(mapped)
                 } else {
                     setData(result)
                 }
@@ -85,9 +72,7 @@ function Faslan({ type }) {
     useEffect(() => {
         fetchData()
 
-        if (type === 'tanah') {
-            setTitle('Fasilitas Pangkalan - Aset Tanah')
-        } else if (type === 'kapling') {
+        if (type === 'kapling') {
             setTitle('Fasilitas Pangkalan - Aset Kapling')
         } else if (type === 'rumneg-lagoa') {
             setTitle('Fasilitas Pangkalan - Rumah Negara Lagoa')
@@ -192,18 +177,112 @@ function Faslan({ type }) {
         return `${latTrim}, ${lonTrim}`;
     };
 
+    // Filter data based on search query
+    const filteredData = useMemo(() => {
+        if (!searchQuery.trim()) return data;
+        
+        const query = searchQuery.toLowerCase();
+        return data.filter(item =>
+            (item.name && item.name.toLowerCase().includes(query)) ||
+            (item.category && item.category.toLowerCase().includes(query)) ||
+            (item.location && item.location.toLowerCase().includes(query)) ||
+            (item.area && item.area.toLowerCase().includes(query)) ||
+            (item.code && item.code.toLowerCase().includes(query)) ||
+            (item.status && item.status.toLowerCase().includes(query))
+        );
+    }, [data, searchQuery]);
+
     const handleImportClick = () => {
         fileInputRef.current.click()
     }
 
+    // Render search and filter toolbar
+    const renderToolbar = () => (
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px', alignItems: 'center' }}>
+            {/* Search Bar */}
+            <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
+                <input
+                    type="text"
+                    placeholder="🔍 Cari Nama, Fungsi, Lokasi..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.9rem',
+                        boxShadow: searchQuery ? '0 0 0 3px rgba(0,51,102,0.1)' : 'none',
+                        outline: 'none',
+                        fontFamily: 'inherit'
+                    }}
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1.1rem',
+                            color: '#94a3b8'
+                        }}
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
+
+            <button 
+                onClick={handleDownloadTemplate}
+                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', color: '#64748b' }}
+            >
+                📋 Template
+            </button>
+
+            <button 
+                onClick={handleExportData}
+                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', color: '#64748b' }}
+            >
+                📊 Excel
+            </button>
+
+            <button 
+                onClick={handleExportPDF}
+                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #f59e0b', background: '#fffbeb', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', color: '#f59e0b' }}
+            >
+                📄 PDF
+            </button>
+
+            <button 
+                onClick={handleImportClick}
+                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', color: '#64748b' }}
+            >
+                📤 Import
+            </button>
+
+            <input
+                ref={fileInputRef}
+                type='file'
+                accept='.xlsx, .xls, .csv'
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+            />
+        </div>
+    );
+
     const handleExportData = () => {
-        if (data.length === 0) {
+        if (filteredData.length === 0) {
             alert('Tidak ada data untuk diekspor');
             return;
         }
 
         // Format data untuk export
-        const exportData = data.map((item) => {
+        const exportData = filteredData.map((item) => {
             // Pisahkan coordinates menjadi Lat dan Lon
             let lat = '-';
             let lon = '-';
@@ -237,13 +316,96 @@ function Faslan({ type }) {
         // Create workbook and export
         const ws = utils.json_to_sheet(exportData);
         const wb = utils.book_new();
-        const typeName = type === 'tanah' ? 'Tanah' : (type === 'kapling' ? 'Kapling' : (type === 'rumneg-lagoa' ? 'RumahNegara' : 'Bangunan'));
+        const typeName = type === 'kapling' ? 'Kapling' : (type === 'rumneg-lagoa' ? 'RumahNegara' : 'Bangunan');
         utils.book_append_sheet(wb, ws, `Data Aset ${typeName}`);
 
         const fileName = `Export_Aset_${typeName}_${new Date().toISOString().split('T')[0]}.xlsx`;
         writeFile(wb, fileName, { bookType: 'xlsx' });
 
-        alert(`Berhasil mengekspor ${data.length} data`);
+        alert(`Berhasil mengekspor ${filteredData.length} data`);
+    };
+
+    // PDF Export function
+    const handleExportPDF = () => {
+        if (filteredData.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+
+        const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 12;
+        let yPosition = margin + 15;
+
+        // Header
+        doc.setFontSize(16);
+        doc.setTextColor(0, 51, 102);
+        let titleText = type === 'kapling' ? 'LAPORAN ASET KAPLING' : 
+                       type === 'rumneg-lagoa' ? 'LAPORAN RUMAH NEGARA LAGOA' : 
+                       'LAPORAN ASET BANGUNAN';
+        doc.text(titleText, margin, yPosition);
+        
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, margin, yPosition);
+        
+        yPosition += 10;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 8;
+
+        // Summary
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Total Data: ${filteredData.length}`, margin, yPosition);
+        yPosition += 8;
+
+        // Table data
+        const tableColumn = type === 'kapling' 
+            ? ['Nama Aset', 'Penghuni', 'Lokasi', 'Luas (m²)', 'Status']
+            : ['Nama', 'Fungsi', 'Alamat', 'Area', 'Status'];
+
+        const tableRows = filteredData.map(item => {
+            if (type === 'kapling') {
+                return [
+                    (item.name || '-').substring(0, 25),
+                    (item.occupant_name || '-').substring(0, 20),
+                    (item.location || '-').substring(0, 25),
+                    (item.luas || '0'),
+                    (item.status || '-').substring(0, 15)
+                ];
+            } else {
+                return [
+                    (item.name || '-').substring(0, 25),
+                    (item.category || '-').substring(0, 15),
+                    (item.location || '-').substring(0, 25),
+                    (item.area || '-').substring(0, 15),
+                    (item.status || '-').substring(0, 15)
+                ];
+            }
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: yPosition,
+            margin: margin,
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { 
+                fillColor: [0, 51, 102],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+        });
+
+        const fileName = type === 'kapling' ? 'Laporan_Aset_Kapling' :
+                        type === 'rumneg-lagoa' ? 'Laporan_Rumah_Negara_Lagoa' :
+                        'Laporan_Aset_Bangunan';
+        doc.save(`${fileName}_${new Date().toISOString().split('T')[0]}.pdf`);
+        alert('✅ PDF berhasil diunduh!');
     };
 
     const handleDownloadTemplate = () => {
@@ -335,7 +497,7 @@ function Faslan({ type }) {
 
         const ws = utils.json_to_sheet(sampleData);
         const wb = utils.book_new();
-        const typeName = type === 'tanah' ? 'Tanah' : (type === 'kapling' ? 'Kapling' : (type === 'rumneg-lagoa' ? 'RumahNegara' : 'Bangunan'));
+        const typeName = type === 'kapling' ? 'Kapling' : (type === 'rumneg-lagoa' ? 'RumahNegara' : 'Bangunan');
         utils.book_append_sheet(wb, ws, `Template Aset ${typeName}`);
         writeFile(wb, `Template_Import_Aset_${typeName}.xlsx`, { bookType: 'xlsx' });
     };
@@ -574,7 +736,7 @@ function Faslan({ type }) {
                     alert("Gagal melakukan Bulk Import: " + err.message);
                 }
             } else {
-                let apiPath = type === 'tanah' ? '/api/assets/tanah' : (type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan')
+                let apiPath = type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan'
                 const endpoint = apiPath
                 let successCount = 0;
                 let failCount = 0;
@@ -644,7 +806,7 @@ function Faslan({ type }) {
     const handleDelete = async () => {
         if (!window.confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
         try {
-            let apiPath = type === 'tanah' ? '/api/assets/tanah' : (type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan')
+            let apiPath = type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan'
             if (type === 'rumneg-lagoa') apiPath = '/api/assets/bangunan'
             const endpoint = `${apiPath}/${selectedAsset.id}`;
             await fetch(endpoint, { method: 'DELETE' });
@@ -660,7 +822,7 @@ function Faslan({ type }) {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            let apiPath = type === 'tanah' ? '/api/assets/tanah' : (type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan')
+            let apiPath = type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan'
             if (type === 'rumneg-lagoa') apiPath = '/api/assets/bangunan'
             const endpoint = `${apiPath}/${selectedAsset.id}`;
             await fetch(endpoint, {
@@ -680,7 +842,7 @@ function Faslan({ type }) {
     const handleDeleteAll = async () => {
         if (!window.confirm(`PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA aset ${type}?`)) return;
         try {
-            let endpoint = type === 'tanah' ? '/api/assets/tanah' : (type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan');
+            let endpoint = type === 'kapling' ? '/api/assets/kapling' : '/api/assets/bangunan';
             if (type === 'rumneg-lagoa') endpoint = '/api/assets/bangunan';
             await fetch(endpoint, { method: 'DELETE' });
             alert('Semua data berhasil dihapus');
@@ -721,7 +883,7 @@ function Faslan({ type }) {
 
                 <div className="page-header">
                     <h1 className="page-title">{title}</h1>
-                    <p className="page-subtitle">Manajemen data aset {type} di lingkungan Kodaeral 3 Jakarta</p>
+                    <p className="page-subtitle">Manajemen data aset {type} di lingkungan NEXIS-3 Jakarta</p>
                 </div>
 
                 <div className="stats-grid">
@@ -758,10 +920,13 @@ function Faslan({ type }) {
                     </div>
                 </div>
 
+                {/* Search and Filter Toolbar */}
+                {renderToolbar()}
+
                 {/* Content: Grouped Table View */}
                 {type === 'kapling' ? (
                     (() => {
-                        const groupedData = dataArray.reduce((acc, asset) => {
+                        const groupedData = filteredData.reduce((acc, asset) => {
                             const area = asset.area || 'Tidak Ditentukan';
                             if (!acc[area]) acc[area] = [];
                             acc[area].push(asset);
@@ -848,7 +1013,7 @@ function Faslan({ type }) {
                     })()
                 ) : (
                     (() => {
-                        const groupedData = dataArray.reduce((acc, asset) => {
+                        const groupedData = filteredData.reduce((acc, asset) => {
                             const area = asset.area || 'Tidak Ditentukan';
                             if (!acc[area]) acc[area] = [];
                             acc[area].push(asset);

@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import PropTypes from 'prop-types';
 
@@ -9,6 +11,23 @@ function RumnegArea({ area }) {
     // Editor State
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredData = useMemo(() => {
+        if (!searchQuery.trim()) return data;
+        const query = searchQuery.toLowerCase();
+
+        return data.filter(item => {
+            return [
+                item.occupant_name,
+                item.alamat_detail,
+                item.no_sip,
+                item.tgl_sip,
+                item.tipe_rumah,
+                item.kondisi
+            ].some(value => (value || '').toLowerCase().includes(query));
+        });
+    }, [data, searchQuery]);
 
     // --- FETCH DATA ---
     const fetchData = async () => {
@@ -55,6 +74,47 @@ function RumnegArea({ area }) {
     };
 
     // --- EDITOR LOGIC ---
+    const handleExportPDF = () => {
+        if (filteredData.length === 0) {
+            alert('Tidak ada data untuk dicetak');
+            return;
+        }
+
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 12;
+
+        doc.setFontSize(16);
+        doc.setTextColor(0, 51, 102);
+        doc.text(`LAPORAN ASET RUMAH NEGARA - ${area}`, margin, 18);
+        doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80);
+        doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, margin, 26);
+
+        const tableColumn = ['No', 'Nama Penghuni', 'Alamat', 'No SIP & Tgl', 'Tipe', 'Kondisi'];
+        const tableRows = filteredData.map((row, index) => [
+            index + 1,
+            row.occupant_name || '-',
+            row.alamat_detail || '-',
+            `${row.no_sip || '-'}${row.tgl_sip ? ` / ${row.tgl_sip}` : ''}`,
+            row.tipe_rumah || '-',
+            row.kondisi || '-'
+        ]);
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 34,
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [0, 51, 102], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+
+        doc.save(`Laporan_Rumah_Negara_${area.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+        alert('PDF berhasil diunduh');
+    };
+
     const handleRowClick = (item) => {
         setCurrentItem({ ...item });
         setIsEditorOpen(true);
@@ -100,6 +160,57 @@ function RumnegArea({ area }) {
                     <h1 className="page-title">Aset Rumah Negara - {area}</h1>
                     <p className="page-subtitle">Monitoring dan Data Penghuni Komplek {area}</p>
                 </div>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+                    <input
+                        type="text"
+                        placeholder="🔍 Cari nama, alamat, SIP, tipe, kondisi..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px 48px 12px 14px',
+                            borderRadius: '10px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.95rem',
+                            outline: 'none'
+                        }}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            style={{
+                                position: 'absolute',
+                                right: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                color: '#64748b'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+                <button
+                    onClick={handleExportPDF}
+                    style={{
+                        padding: '10px 18px',
+                        borderRadius: '10px',
+                        border: '1px solid #f59e0b',
+                        background: '#fffbeb',
+                        color: '#b45309',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                    }}
+                >
+                    📄 Cetak PDF
+                </button>
             </div>
 
             {/* SUMMARY BOXES */}
@@ -181,7 +292,7 @@ function RumnegArea({ area }) {
                         ) : data.length === 0 ? (
                             <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>Tidak ada data untuk area {area}</td></tr>
                         ) : (
-                            data.map((row, index) => (
+                            filteredData.map((row, index) => (
                                 <tr
                                     key={row.id}
                                     onClick={() => handleRowClick(row)}

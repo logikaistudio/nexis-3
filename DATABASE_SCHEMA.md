@@ -1,6 +1,6 @@
 # Database Schema Documentation
 
-Dokumentasi lengkap struktur database untuk aplikasi SisInfoLog Kodaeral.
+Dokumentasi lengkap struktur database untuk aplikasi NEXIS-3 Jakarta.
 
 **Database:** PostgreSQL (Neon Serverless)  
 **Last Updated:** 2026-02-17

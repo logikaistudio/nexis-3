@@ -1,8 +1,8 @@
-# Sisinfolog - Sistem Informasi Logistik Kodaeral 3 Jakarta
+# NEXIS-3 - Naval Execution & Information System Kodaeral 3 Jakarta
 
 ![Sisinfolog](https://img.shields.io/badge/Version-1.0.0-blue) ![React](https://img.shields.io/badge/React-18.3.1-61dafb) ![Vite](https://img.shields.io/badge/Vite-7.3.1-646cff)
 
-Aplikasi modern untuk manajemen aset dan logistik Kodaeral 3 Jakarta dengan tampilan responsif dan mobile-first.
+Aplikasi modern untuk manajemen aset dan logistik NEXIS-3 Jakarta dengan tampilan responsif dan mobile-first.
 
 ## 🚀 Fitur Utama
 
@@ -73,7 +73,7 @@ Aplikasi modern untuk manajemen aset dan logistik Kodaeral 3 Jakarta dengan tamp
 git clone [repository-url]
 
 # Masuk ke direktori
-cd sisinfolog
+cd NEXIS-3
 
 # Install dependencies
 npm install
@@ -87,7 +87,7 @@ Aplikasi akan berjalan di `http://localhost:5173`
 ## 🏗️ Struktur Proyek
 
 ```
-sisinfolog/
+NEXIS-3/
 ├── src/
 │   ├── components/
 │   │   └── Sidebar.jsx          # Komponen sidebar navigasi
@@ -170,7 +170,7 @@ npm run preview
 
 ## 👥 Target Users
 
-- Petugas Logistik Kodaeral 3 Jakarta
+- Petugas Logistik NEXIS-3 Jakarta
 - Kepala Gudang
 - Supervisor Operasional
 - Admin Bekal
@@ -178,12 +178,12 @@ npm run preview
 
 ## 📝 License
 
-Copyright © 2026 Kodaeral 3 Jakarta
+Copyright © 2026 NEXIS-3 Jakarta
 
 ## 🤝 Contributing
 
-Untuk kontribusi dan pengembangan lebih lanjut, silakan hubungi tim IT Kodaeral 3 Jakarta.
+Untuk kontribusi dan pengembangan lebih lanjut, silakan hubungi tim IT NEXIS-3 Jakarta.
 
 ---
 
-**Dibuat dengan ❤️ untuk Kodaeral 3 Jakarta**
+**Dibuat dengan ❤️ untuk NEXIS-3 Jakarta**

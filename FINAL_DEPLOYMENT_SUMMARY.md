@@ -296,7 +296,7 @@ All ✅ Achieved:
 ## 🔗 Important Links
 
 **GitHub Repository:**
-https://github.com/logikaistudio/sisinfolog-kodaeral
+https://github.com/logikaistudio/NEXIS-3
 
 **Vercel Dashboard:**
 https://vercel.com/dashboard

@@ -1,5 +1,5 @@
 {
-  "name": "sisinfolog",
+  "name": "NEXIS-3",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,9 @@
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:setup": "node database/migrate_to_supabase.cjs",
+    "db:verify": "node database/verify_schema.js"
   },
   "dependencies": {
     "concurrently": "^9.1.2",

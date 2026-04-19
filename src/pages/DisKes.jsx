@@ -418,7 +418,7 @@ function DisKes() {
 
             <div className="page-header">
                 <h1 className="page-title">Fasilitas Kesehatan (DisKes)</h1>
-                <p className="page-subtitle">Manajemen Fasilitas Kesehatan dan Peralatan Medis Kodaeral 3</p>
+                <p className="page-subtitle">Manajemen Fasilitas Kesehatan dan Peralatan Medis NEXIS-3</p>
             </div>
 
             <div className="stats-grid" style={{ marginBottom: '24px' }}>

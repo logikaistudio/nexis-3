@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import pool from './db.js';
+import { ensureAllTables, ensureTable } from '../database/schema.js';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,73 +36,15 @@ app.get('/api/health', async (req, res) => {
 // Database Setup Endpoint (for production first-time setup)
 app.get('/api/setup', async (req, res) => {
     try {
-        const results = [];
-
-        // 1. Setup Users Table
-        results.push('Setting up users table...');
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100),
-                email VARCHAR(100) UNIQUE,
-                role VARCHAR(50),
-                status VARCHAR(20) DEFAULT 'Active',
-                avatar TEXT,
-                username VARCHAR(50) UNIQUE,
-                password VARCHAR(255),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        `);
-
-        // Check and create default admin
-        const adminCheck = await pool.query("SELECT * FROM users WHERE username = 'kodaeral'");
-        if (adminCheck.rows.length === 0) {
-            await pool.query(`
-                INSERT INTO users (name, email, role, status, username, password) 
-                VALUES ('Administrator', 'admin@kodaeral.com', 'Super Admin', 'Active', 'kodaeral', 'kodaeral')
-            `);
-            results.push('✅ Default admin user created (kodaeral/kodaeral)');
-        } else {
-            results.push('✅ Admin user already exists');
-        }
-
-        // 2. Setup Roles Table
-        results.push('Setting up roles table...');
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS roles (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL UNIQUE,
-                description TEXT,
-                permissions TEXT[],
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        `);
-
-        const rolesCheck = await pool.query("SELECT COUNT(*) FROM roles");
-        if (parseInt(rolesCheck.rows[0].count) === 0) {
-            await pool.query(`
-                INSERT INTO roles (name, description, permissions) VALUES 
-                ('Super Admin', 'Full access to all system features', ARRAY['all']),
-                ('Admin', 'Administrative access', ARRAY['manage_users', 'manage_content']),
-                ('User', 'Standard user access', ARRAY['read_content']);
-            `);
-            results.push('✅ Default roles created');
-        } else {
-            results.push('✅ Roles already exist');
-        }
-
+        await ensureAllTables(pool);
         res.json({
             status: 'success',
             message: 'Database setup completed',
-            results: results,
             credentials: {
                 username: 'kodaeral',
                 password: 'kodaeral'
             }
         });
-
     } catch (err) {
         console.error('Setup error:', err);
         res.status(500).json({
@@ -172,23 +115,14 @@ app.get('/api/assets/kapling', async (req, res) => {
         const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (err) {
-        // Auto-create table if missing (for Neon/Prod)
         if (err.code === '42P01') {
             try {
-                await pool.query(`
-                    CREATE TABLE IF NOT EXISTS assets_kapling (
-                        id SERIAL PRIMARY KEY, name VARCHAR(255), code VARCHAR(50), category VARCHAR(100), luas VARCHAR(50), status VARCHAR(50), location TEXT, coordinates VARCHAR(100), map_boundary TEXT, area VARCHAR(100), folder_id INTEGER,
-                        occupant_name VARCHAR(100), occupant_rank VARCHAR(50), occupant_nrp VARCHAR(50), occupant_title VARCHAR(100),
-                        jenis_bmn VARCHAR(100), kode_barang VARCHAR(50), nup VARCHAR(50), nama_barang VARCHAR(255), kondisi VARCHAR(50),
-                        luas_tanah_seluruhnya VARCHAR(50), tanah_yg_telah_bersertifikat VARCHAR(50), tanah_yg_belum_bersertifikat VARCHAR(50),
-                        tanggal_perolehan VARCHAR(50), nilai_perolehan NUMERIC, no_sertifikat VARCHAR(100), tgl_sertifikat VARCHAR(50),
-                        standar_satuan VARCHAR(50), alamat_detail TEXT, kecamatan VARCHAR(100), kabupaten VARCHAR(100), provinsi VARCHAR(100), keterangan_bmn TEXT,
-                        kode_kota VARCHAR(50), no_psp VARCHAR(100), tgl_psp VARCHAR(50), rt_rw VARCHAR(50), kelurahan_desa VARCHAR(100),
-                        created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
-                    )
-                 `);
+                await ensureTable(pool, 'assets_kapling');
                 res.json([]);
-            } catch (e) { console.error(e); res.status(500).json({ error: 'DB Error' }); }
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ error: 'DB Error' });
+            }
         } else {
             console.error(err);
             res.status(500).json({ error: 'Internal server error' });
@@ -288,30 +222,14 @@ app.get('/api/assets/pemanfaatan', async (req, res) => {
         const result = await pool.query('SELECT * FROM assets_pemanfaatan ORDER BY id ASC');
         res.json(result.rows);
     } catch (err) {
-        // Auto-create table if missing
         if (err.code === '42P01') {
             try {
-                await pool.query(`
-                    CREATE TABLE IF NOT EXISTS assets_pemanfaatan (
-                        id SERIAL PRIMARY KEY,
-                        objek TEXT,
-                        pemanfaatan TEXT,
-                        luas TEXT,
-                        bentuk_pemanfaatan TEXT,
-                        pihak_pks TEXT,
-                        no_pks TEXT,
-                        tgl_pks TEXT,
-                        nilai_kompensasi TEXT,
-                        jangka_waktu TEXT,
-                        no_persetujuan TEXT,
-                        tgl_persetujuan TEXT,
-                        no_ntpn TEXT,
-                        tgl_ntpn TEXT,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    );
-                `);
+                await ensureTable(pool, 'assets_pemanfaatan');
                 res.json([]);
-            } catch (e) { console.error(e); res.status(500).json({ error: 'DB Error' }); }
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ error: 'DB Error' });
+            }
         } else {
             console.error(err);
             res.status(500).json({ error: 'Internal server error' });
@@ -1006,97 +924,7 @@ app.delete('/api/assets/bangunan', async (req, res) => {
 
 async function ensureMasterAssetUtamaTable() {
     try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS master_asset_utama (
-                id SERIAL PRIMARY KEY,
-                unique_key VARCHAR(200) UNIQUE,
-                jenis_bmn TEXT,
-                kode_satker TEXT,
-                nama_satker TEXT,
-                kode_barang TEXT,
-                nup TEXT,
-                nama_barang TEXT,
-                status_bmn TEXT,
-                merk TEXT,
-                tipe TEXT,
-                kondisi TEXT,
-                umur_aset NUMERIC,
-                intra_extra TEXT,
-                henti_guna TEXT,
-                status_sbsn TEXT,
-                status_bmn_idle TEXT,
-                status_kemitraan TEXT,
-                bpybds TEXT,
-                usulan_barang_hilang TEXT,
-                usulan_barang_rb TEXT,
-                usul_hapus TEXT,
-                hibah_dktp TEXT,
-                konsesi_jasa TEXT,
-                properti_investasi TEXT,
-                jenis_dokumen TEXT,
-                no_dokumen TEXT,
-                no_bpkp TEXT,
-                no_polisi TEXT,
-                status_sertifikasi TEXT,
-                jenis_sertifikat TEXT,
-                no_sertifikat TEXT,
-                nama_sertifikat TEXT,
-                tanggal_buku_pertama TEXT,
-                tanggal_perolehan TEXT,
-                tanggal_penghapusan TEXT,
-                nilai_perolehan_pertama NUMERIC,
-                nilai_mutasi NUMERIC,
-                nilai_perolehan NUMERIC,
-                nilai_penyusutan NUMERIC,
-                nilai_buku NUMERIC,
-                luas_tanah_seluruhnya NUMERIC,
-                luas_tanah_bangunan NUMERIC,
-                luas_tanah_sarana NUMERIC,
-                luas_tanah_kosong NUMERIC,
-                luas_bangunan NUMERIC,
-                luas_tapak_bangunan NUMERIC,
-                luas_pemanfaatan NUMERIC,
-                jumlah_lantai NUMERIC,
-                jumlah_foto NUMERIC,
-                status_bangunan TEXT,
-                no_psp TEXT,
-                tanggal_psp TEXT,
-                alamat TEXT,
-                rt_rw TEXT,
-                kelurahan_desa TEXT,
-                kecamatan TEXT,
-                kab_kota TEXT,
-                kode_kab_kota TEXT,
-                provinsi TEXT,
-                kode_provinsi TEXT,
-                kode_pos TEXT,
-                sbsk TEXT,
-                optimalisasi TEXT,
-                penghuni TEXT,
-                pengguna TEXT,
-                kode_kpknl TEXT,
-                uraian_kpknl TEXT,
-                uraian_kanwil_djkn TEXT,
-                nama_kl TEXT,
-                nama_e1 TEXT,
-                nama_korwil TEXT,
-                kode_register TEXT,
-                lokasi_ruang TEXT,
-                jenis_identitas TEXT,
-                no_identitas TEXT,
-                no_stnk TEXT,
-                nama_pengguna TEXT,
-                status_pmk TEXT,
-                longitude TEXT,
-                latitude TEXT,
-                lanal TEXT,
-                photos TEXT,
-                identifikasi_aset TEXT,
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
-        `);
-        // Add new columns to existing tables
+        await ensureTable(pool, 'master_asset_utama');
         await pool.query('ALTER TABLE master_asset_utama ADD COLUMN IF NOT EXISTS lanal TEXT');
         await pool.query('ALTER TABLE master_asset_utama ADD COLUMN IF NOT EXISTS photos TEXT');
         await pool.query('ALTER TABLE master_asset_utama ADD COLUMN IF NOT EXISTS identifikasi_aset TEXT');
@@ -1428,23 +1256,8 @@ app.post('/api/master/units', async (req, res) => {
 // Helper function to ensure users table exists with all required columns
 async function ensureUsersTable() {
     try {
-        // Create table if not exists
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100),
-                email VARCHAR(100) UNIQUE,
-                role VARCHAR(50),
-                status VARCHAR(20) DEFAULT 'Active',
-                avatar TEXT,
-                username VARCHAR(50) UNIQUE,
-                password VARCHAR(255),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        `);
+        await ensureTable(pool, 'users');
 
-        // Add missing columns if table already exists
         await pool.query(`
             DO $$ 
             BEGIN 
@@ -1466,7 +1279,6 @@ async function ensureUsersTable() {
             END $$;
         `);
 
-        // Ensure default admin exists
         const adminCheck = await pool.query("SELECT * FROM users WHERE username = 'kodaeral'");
         if (adminCheck.rows.length === 0) {
             await pool.query(`
@@ -1485,24 +1297,14 @@ async function ensureUsersTable() {
 // Helper function to ensure roles table exists
 async function ensureRolesTable() {
     try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS roles (
-                id SERIAL PRIMARY KEY, 
-                name VARCHAR(100) NOT NULL UNIQUE,
-                description TEXT,
-                permissions TEXT[],
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        `);
+        await ensureTable(pool, 'roles');
 
-        // Fix column name if it's wrong (permission vs permissions)
         await pool.query(`
             DO $$ 
             BEGIN 
                 -- Check if old column 'permission' exists and rename it
                 IF EXISTS (
-                    SELECT 1 FROM information_schema.columns 
+                    SELECT 1 FROM information_schema.columns  
                     WHERE table_name='roles' AND column_name='permission'
                 ) THEN
                     ALTER TABLE roles RENAME COLUMN permission TO permissions;
@@ -1517,7 +1319,6 @@ async function ensureRolesTable() {
             END $$;
         `);
 
-        // Check if default roles exist
         const rolesCheck = await pool.query("SELECT COUNT(*) FROM roles");
         if (parseInt(rolesCheck.rows[0].count) === 0) {
             await pool.query(`
@@ -1769,16 +1570,7 @@ app.get('/api/structure/folders', async (req, res) => {
         `);
 
         if (!tableCheck.rows[0].exists) {
-            // Create table if not exists
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS master_asset_folders (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW()
-                )
-            `);
+            await ensureTable(pool, 'master_asset_folders');
             return res.json([]);
         }
 
@@ -2302,35 +2094,14 @@ app.get('/api/assets/rumneg', async (req, res) => {
         const result = await pool.query('SELECT * FROM assets_rumneg ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (err) {
-        // Auto-create table if missing
         if (err.code === '42P01') {
             try {
-                await pool.query(`
-                    CREATE TABLE IF NOT EXISTS assets_rumneg (
-                        id SERIAL PRIMARY KEY,
-                        occupant_name TEXT,
-                        occupant_rank TEXT,
-                        occupant_nrp TEXT,
-                        area TEXT,
-                        alamat_detail TEXT,
-                        longitude TEXT,
-                        latitude TEXT,
-                        status_penghuni TEXT,
-                        no_sip TEXT,
-                        tgl_sip TEXT,
-                        tipe_rumah TEXT,
-                        golongan TEXT,
-                        tahun_buat TEXT,
-                        asal_perolehan TEXT,
-                        mendapat_fasdin TEXT,
-                        kondisi TEXT,
-                        keterangan TEXT,
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        updated_at TIMESTAMP DEFAULT NOW()
-                    );
-                `);
+                await ensureTable(pool, 'assets_rumneg');
                 res.json([]);
-            } catch (e) { console.error(e); res.status(500).json({ error: 'DB Error' }); }
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ error: 'DB Error' });
+            }
         } else {
             console.error(err);
             res.status(500).json({ error: 'Internal server error' });
@@ -2349,31 +2120,11 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Ensure table exists
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS assets_rumneg (
-                id SERIAL PRIMARY KEY,
-                occupant_name TEXT,
-                occupant_rank TEXT,
-                occupant_nrp TEXT,
-                area TEXT,
-                alamat_detail TEXT,
-                longitude TEXT,
-                latitude TEXT,
-                status_penghuni TEXT,
-                no_sip TEXT,
-                tgl_sip TEXT,
-                tipe_rumah TEXT,
-                golongan TEXT,
-                tahun_buat TEXT,
-                asal_perolehan TEXT,
-                mendapat_fasdin TEXT,
-                kondisi TEXT,
-                keterangan TEXT,
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-        `);
+        // Ensure new SIP columns exist
+        await client.query(`ALTER TABLE assets_rumneg ADD COLUMN IF NOT EXISTS no_sip_2 TEXT`);
+        await client.query(`ALTER TABLE assets_rumneg ADD COLUMN IF NOT EXISTS tgl_sip_2 TEXT`);
+        await client.query(`ALTER TABLE assets_rumneg ADD COLUMN IF NOT EXISTS no_sip_3 TEXT`);
+        await client.query(`ALTER TABLE assets_rumneg ADD COLUMN IF NOT EXISTS tgl_sip_3 TEXT`);
 
         // Overwrite strategy: first delete all existing data for the areas being imported
         const areasToReplace = [...new Set(items.map(item => item.area).filter(Boolean))];
@@ -2381,7 +2132,7 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
             await client.query('DELETE FROM assets_rumneg WHERE area = $1', [area]);
         }
 
-        // Chunk inserts to handle large imports quickly and avoid Vercel timeouts (504)
+        // Chunk inserts to handle large imports quickly
         const CHUNK_SIZE = 100;
         for (let i = 0; i < items.length; i += CHUNK_SIZE) {
             const chunk = items.slice(i, i + CHUNK_SIZE);
@@ -2390,11 +2141,15 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
             let paramIndex = 1;
 
             for (const item of chunk) {
-                valueStrings.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+                valueStrings.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
                 flatValues.push(
                     item.occupant_name ?? null, item.occupant_rank ?? null, item.occupant_nrp ?? null, item.area ?? null, item.alamat_detail ?? null,
-                    item.longitude ?? null, item.latitude ?? null, item.status_penghuni ?? null, item.no_sip ?? null, item.tgl_sip ?? null,
-                    item.tipe_rumah ?? null, item.golongan ?? null, item.tahun_buat ?? null, item.asal_perolehan ?? null, item.mendapat_fasdin ?? null,
+                    item.longitude ?? null, item.latitude ?? null, item.status_penghuni ?? null,
+                    item.no_sip ?? null, item.tgl_sip ?? null,
+                    item.no_sip_2 ?? null, item.tgl_sip_2 ?? null,
+                    item.no_sip_3 ?? null, item.tgl_sip_3 ?? null,
+                    item.tipe_rumah ?? null, item.golongan ?? null, item.tahun_buat ?? null,
+                    item.asal_perolehan ?? null, item.mendapat_fasdin ?? null,
                     item.kondisi ?? null, item.keterangan ?? null
                 );
             }
@@ -2402,8 +2157,12 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
             await client.query(
                 `INSERT INTO assets_rumneg (
                     occupant_name, occupant_rank, occupant_nrp, area, alamat_detail,
-                    longitude, latitude, status_penghuni, no_sip, tgl_sip,
-                    tipe_rumah, golongan, tahun_buat, asal_perolehan, mendapat_fasdin,
+                    longitude, latitude, status_penghuni,
+                    no_sip, tgl_sip,
+                    no_sip_2, tgl_sip_2,
+                    no_sip_3, tgl_sip_3,
+                    tipe_rumah, golongan, tahun_buat,
+                    asal_perolehan, mendapat_fasdin,
                     kondisi, keterangan
                 ) VALUES ${valueStrings.join(', ')}`,
                 flatValues
@@ -2414,7 +2173,7 @@ app.post('/api/assets/rumneg/bulk', async (req, res) => {
     } catch (err) {
         await client.query('ROLLBACK');
         console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error', details: err.message });
     } finally {
         client.release();
     }
@@ -2425,7 +2184,10 @@ app.put('/api/assets/rumneg/:id', async (req, res) => {
     const { id } = req.params;
     const {
         occupant_name, occupant_rank, occupant_nrp, area, alamat_detail,
-        longitude, latitude, status_penghuni, no_sip, tgl_sip,
+        longitude, latitude, status_penghuni,
+        no_sip, tgl_sip,
+        no_sip_2, tgl_sip_2,
+        no_sip_3, tgl_sip_3,
         tipe_rumah, golongan, tahun_buat, asal_perolehan, mendapat_fasdin,
         kondisi, keterangan
     } = req.body;
@@ -2434,14 +2196,22 @@ app.put('/api/assets/rumneg/:id', async (req, res) => {
         const result = await pool.query(
             `UPDATE assets_rumneg SET
                 occupant_name=$1, occupant_rank=$2, occupant_nrp=$3, area=$4, alamat_detail=$5,
-                longitude=$6, latitude=$7, status_penghuni=$8, no_sip=$9, tgl_sip=$10,
-                tipe_rumah=$11, golongan=$12, tahun_buat=$13, asal_perolehan=$14, mendapat_fasdin=$15,
-                kondisi=$16, keterangan=$17, updated_at=NOW()
-             WHERE id=$18 RETURNING *`,
+                longitude=$6, latitude=$7, status_penghuni=$8,
+                no_sip=$9, tgl_sip=$10,
+                no_sip_2=$11, tgl_sip_2=$12,
+                no_sip_3=$13, tgl_sip_3=$14,
+                tipe_rumah=$15, golongan=$16, tahun_buat=$17,
+                asal_perolehan=$18, mendapat_fasdin=$19,
+                kondisi=$20, keterangan=$21, updated_at=NOW()
+             WHERE id=$22 RETURNING *`,
             [
                 occupant_name ?? null, occupant_rank ?? null, occupant_nrp ?? null, area ?? null, alamat_detail ?? null,
-                longitude ?? null, latitude ?? null, status_penghuni ?? null, no_sip ?? null, tgl_sip ?? null,
-                tipe_rumah ?? null, golongan ?? null, tahun_buat ?? null, asal_perolehan ?? null, mendapat_fasdin ?? null,
+                longitude ?? null, latitude ?? null, status_penghuni ?? null,
+                no_sip ?? null, tgl_sip ?? null,
+                no_sip_2 ?? null, tgl_sip_2 ?? null,
+                no_sip_3 ?? null, tgl_sip_3 ?? null,
+                tipe_rumah ?? null, golongan ?? null, tahun_buat ?? null,
+                asal_perolehan ?? null, mendapat_fasdin ?? null,
                 kondisi ?? null, keterangan ?? null, id
             ]
         );

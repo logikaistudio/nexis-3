@@ -92,7 +92,7 @@ curl https://your-app.vercel.app/api/harkan
 ## 🔗 Deployment URLs
 
 **GitHub Repository:**
-https://github.com/logikaistudio/sisinfolog-kodaeral
+https://github.com/logikaistudio/NEXIS-3
 
 **Vercel Dashboard:**
 https://vercel.com/dashboard

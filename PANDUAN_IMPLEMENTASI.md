@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-Dokumen ini menjelaskan cara mengintegrasikan Master Asset BMN dengan modul-modul lain di aplikasi Sisinfolog Kodaeral 3.
+Dokumen ini menjelaskan cara mengintegrasikan Master Asset BMN dengan modul-modul lain di aplikasi NEXIS-3 Jakarta.
 
 ## 🎯 Konsep Dasar
 

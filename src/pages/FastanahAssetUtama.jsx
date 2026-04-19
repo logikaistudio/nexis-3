@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 function FastanahAssetUtama() {
     const [assets, setAssets] = useState([]);
     const [rawDataMap, setRawDataMap] = useState({});
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Editor State
     const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -17,6 +20,38 @@ function FastanahAssetUtama() {
 
     const FONT_SYSTEM = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
     const FONT_MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+
+    const btnStyle = (bgColor, textColor, borderColor) => ({
+        padding: '10px 16px',
+        background: bgColor,
+        color: textColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '0.85rem',
+        fontWeight: '500',
+        transition: 'all 0.2s',
+        '&:hover': { opacity: 0.8 }
+    });
+
+    const thStyle = {
+        padding: '12px 14px',
+        textAlign: 'left',
+        fontWeight: '600',
+        fontSize: '0.8rem',
+        color: '#475569',
+        background: '#f1f5f9',
+        borderBottom: '2px solid #e2e8f0',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+    };
+
+    const tdStyle = {
+        padding: '12px 14px',
+        fontSize: '0.85rem',
+        color: '#1e293b',
+        borderBottom: '1px solid #f1f5f9'
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -259,29 +294,121 @@ function FastanahAssetUtama() {
     };
 
     // --- Summary calculations ---
+    const filteredAssets = useMemo(() => {
+        if (!searchQuery.trim()) return assets;
+        
+        const query = searchQuery.toLowerCase();
+        return assets.filter(asset => 
+            asset.nup.toLowerCase().includes(query) ||
+            asset.kode_barang.toLowerCase().includes(query) ||
+            asset.nama_bangunan.toLowerCase().includes(query) ||
+            asset.alamat_lengkap.toLowerCase().includes(query) ||
+            asset.area.toLowerCase().includes(query) ||
+            asset.lanal.toLowerCase().includes(query) ||
+            asset.identifikasi_aset.toLowerCase().includes(query)
+        );
+    }, [assets, searchQuery]);
+
     const totalLuas = useMemo(() =>
-        assets.reduce((sum, asset) => sum + (isNaN(asset.luas_tanah) ? 0 : asset.luas_tanah), 0),
-    [assets]);
-    const certifiedCount = useMemo(() => assets.filter(a => a.status_sertifikasi === 'Bersertifikat').length, [assets]);
+        filteredAssets.reduce((sum, asset) => sum + (isNaN(asset.luas_tanah) ? 0 : asset.luas_tanah), 0),
+    [filteredAssets]);
+    const certifiedCount = useMemo(() => filteredAssets.filter(a => a.status_sertifikasi === 'Bersertifikat').length, [filteredAssets]);
 
     const groupedAssets = useMemo(() => {
         const groups = {};
-        assets.forEach(asset => {
+        filteredAssets.forEach(asset => {
             const area = asset.lanal || 'Tidak Ada Lanal';
             if (!groups[area]) groups[area] = [];
             groups[area].push(asset);
         });
         return groups;
-    }, [assets]);
+    }, [filteredAssets]);
 
     const uniqueAreas = Object.keys(groupedAssets).length;
 
     const summaryCards = [
-        { title: 'Total Aset', value: assets.length, color: '#0f172a', border: '#1e293b' },
+        { title: 'Total Aset', value: filteredAssets.length, color: '#0f172a', border: '#1e293b' },
         { title: 'Luas Total', value: formatLuas(totalLuas), color: '#10b981', border: '#10b981' },
         { title: 'Bersertifikat', value: certifiedCount, color: '#3b82f6', border: '#3b82f6' },
         { title: 'Total Area', value: uniqueAreas, color: '#f59e0b', border: '#f59e0b' },
     ];
+
+    // Export PDF function
+    const handleExportPDF = () => {
+        if (filteredAssets.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+
+        const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 12;
+
+        let yPosition = margin + 15;
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(0, 51, 102);
+        doc.text('LAPORAN ASET TANAH', margin, yPosition);
+        
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, margin, yPosition);
+        
+        yPosition += 10;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+
+        yPosition += 8;
+
+        // Summary Info
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Total Aset: ${filteredAssets.length}`, margin, yPosition);
+        yPosition += 6;
+        doc.text(`Total Luas: ${formatLuas(totalLuas)}`, margin, yPosition);
+        yPosition += 6;
+        doc.text(`Bersertifikat: ${certifiedCount}`, margin, yPosition);
+        yPosition += 8;
+
+        // Table
+        const tableColumn = ['NUP', 'Kode Barang', 'Nama Aset', 'Alamat', 'Luas (m²)', 'Legalitas'];
+        const tableRows = filteredAssets.map(asset => [
+            asset.nup,
+            asset.kode_barang,
+            asset.nama_bangunan,
+            (asset.alamat || asset.alamat_lengkap).substring(0, 30),
+            asset.luas_tanah.toLocaleString('id-ID'),
+            asset.status_sertifikasi
+        ]);
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: yPosition,
+            margin: margin,
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { 
+                fillColor: [0, 51, 102],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            columnStyles: {
+                0: { cellWidth: 20 },
+                1: { cellWidth: 22 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 35 },
+                4: { cellWidth: 20, halign: 'right' },
+                5: { cellWidth: 25 }
+            }
+        });
+
+        doc.save(`Laporan_Aset_Tanah_${new Date().toISOString().split('T')[0]}.pdf`);
+        alert('✅ PDF berhasil diunduh!');
+    };
 
     return (
         <div className="fade-in" style={{ fontFamily: FONT_SYSTEM, minHeight: '100%', display: 'flex', flexDirection: 'column', background: '#f8fafc', padding: '20px 30px' }}>
@@ -300,7 +427,7 @@ function FastanahAssetUtama() {
                     Fasilitas Pangkalan — Aset Tanah
                 </h1>
                 <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '0.95rem' }}>
-                    Manajemen data aset tanah di lingkungan Kodaeral 3 Jakarta. Klik baris untuk membuka editor.
+                    Manajemen data aset tanah di lingkungan NEXIS-3 Jakarta. Klik baris untuk membuka editor.
                 </p>
             </div>
 
@@ -319,10 +446,54 @@ function FastanahAssetUtama() {
             </div>
 
             {/* Toolbar */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '28px', alignItems: 'center' }}>
+                {/* Search Bar */}
+                <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
+                    <input
+                        type="text"
+                        placeholder="🔍 Cari NUP, Kode, Nama, Lokasi..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '10px 16px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.9rem',
+                            fontFamily: FONT_SYSTEM,
+                            boxShadow: searchQuery ? '0 0 0 3px rgba(0,51,102,0.1)' : 'none',
+                            outline: 'none'
+                        }}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '1.2rem'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+
                 <button style={btnStyle('#003366', 'white', '#003366')}>Tambah</button>
                 <button style={btnStyle('white', '#003366', '#cbd5e1')}>Import Excel</button>
                 <button style={btnStyle('white', '#003366', '#cbd5e1')}>Template (.xls)</button>
+                <button 
+                    onClick={handleExportPDF}
+                    style={btnStyle('white', '#10b981', '#cbd5e1')}
+                    title="Export ke PDF"
+                >
+                    📄 Export PDF
+                </button>
                 <button style={btnStyle('white', '#003366', '#cbd5e1')}>Export Data</button>
                 <button style={btnStyle('white', '#ef4444', '#fca5a5')}>Hapus Multi</button>
                 <button style={btnStyle('white', '#64748b', '#e2e8f0')}>Reset All Data</button>

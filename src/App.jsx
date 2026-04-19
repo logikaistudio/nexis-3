@@ -89,8 +89,6 @@ function App() {
         return <DashboardPimpinan setCurrentPage={setCurrentPage} />
       case 'faslan-peta':
         return <PetaFaslan />
-      case 'faslan-tanah':
-        return <Faslan type="tanah" />
       case 'faslan-tanah-utama':
         return <FastanahAssetUtama />
       case 'faslan-kapling':

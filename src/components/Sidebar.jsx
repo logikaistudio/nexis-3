@@ -73,7 +73,6 @@ function Sidebar({ currentPage, setCurrentPage, collapsed, setCollapsed, mobileO
                     label: 'Fastanah',
                     icon: '📍',
                     children: [
-                        { id: 'faslan-tanah', label: 'Aset Tanah', icon: '⛰️' },
                         { id: 'faslan-tanah-utama', label: 'Aset Tanah Utama', icon: '📍' },
                         { id: 'faslan-kapling', label: 'Aset Kapling', icon: '🏕️' },
                         {

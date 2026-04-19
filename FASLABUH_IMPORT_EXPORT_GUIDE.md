@@ -230,4 +230,4 @@ Jika mengalami masalah atau membutuhkan bantuan:
 
 **Versi**: 1.0  
 **Terakhir Diupdate**: 11 Februari 2026  
-**Aplikasi**: Sisinfolog Kodaeral
+**Aplikasi**: NEXIS-3 Jakarta

@@ -310,4 +310,4 @@ Jika mengalami masalah:
 
 ---
 
-**Dibuat dengan ❤️ untuk kemudahan import data faslabuh Kodaeral 3 Jakarta**
+**Dibuat dengan ❤️ untuk kemudahan import data faslabuh NEXIS-3 Jakarta**

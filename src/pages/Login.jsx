@@ -78,7 +78,7 @@ function Login({ onLogin }) {
                     fontWeight: '500',
                     letterSpacing: '1px'
                 }}>
-                    NAVAL EXECUTION & INFORMATION SYSTEM<br />KODAERAL 3 JAKARTA
+                    NAVAL EXECUTION & INFORMATION SYSTEM<br />NEXIS-3 JAKARTA
                 </p>
             </div>
 

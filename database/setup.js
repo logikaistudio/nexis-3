@@ -132,7 +132,7 @@ async function setupDatabase() {
                 code VARCHAR(100) UNIQUE,
                 name TEXT NOT NULL,
                 category VARCHAR(100),
-                quantity INTEGER DEFAULT 0,
+                stock INTEGER DEFAULT 0,
                 unit VARCHAR(50),
                 condition VARCHAR(50),
                 location TEXT,

@@ -10,75 +10,90 @@ const pool = new Pool({
     }
 });
 
+const requiredSchema = {
+    roles: ['id', 'name', 'description', 'permissions', 'created_at', 'updated_at'],
+    users: ['id', 'name', 'email', 'role', 'status', 'username', 'password', 'created_at', 'updated_at'],
+    master_asset_folders: ['id', 'name', 'description', 'created_at', 'updated_at'],
+    assets_tanah: ['id', 'code', 'name', 'folder_id', 'source_file', 'jenis_bmn', 'kode_barang', 'nup', 'nama_barang', 'kondisi', 'created_at', 'updated_at'],
+    assets_bangunan: ['id', 'code', 'name', 'folder_id', 'source_file', 'created_at', 'updated_at'],
+    assets_kapling: ['id', 'code', 'name', 'category', 'created_at', 'updated_at'],
+    assets_rumneg: ['id', 'occupant_name', 'occupant_rank', 'occupant_nrp', 'created_at', 'updated_at'],
+    assets_pemanfaatan: ['id', 'objek', 'pemanfaatan', 'created_at'],
+    assets_diskes: ['id', 'name', 'type', 'location', 'status', 'created_at', 'updated_at'],
+    faslabuh: ['id', 'nama_dermaga', 'fungsi_dermaga', 'longitude', 'latitude', 'fotos', 'created_at', 'updated_at'],
+    master_asset_utama: ['id', 'unique_key', 'kode_barang', 'nup', 'nama_barang', 'created_at', 'updated_at'],
+    supplies: ['id', 'code', 'name', ['stock', 'quantity'], 'unit', 'created_at', 'updated_at'],
+    master_locations: ['id', 'code', 'name', 'type', 'created_at', 'updated_at'],
+    master_officers: ['id', 'nrp', 'name', 'position', 'phone', 'created_at', 'updated_at'],
+    master_units: ['id', 'code', 'name', 'type', 'created_at', 'updated_at'],
+    departments: ['id', 'name', 'code', 'description', 'created_at', 'updated_at'],
+    staff: ['id', 'name', 'nrp', 'rank', 'position', 'department_id', 'email', 'phone', 'created_at', 'updated_at'],
+    tasks: ['id', 'title', 'status', 'created_by', 'assigned_to', 'created_at', 'updated_at']
+};
+
+async function verifyTableExists(client, tableName) {
+    const result = await client.query(
+        `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1);`,
+        [tableName]
+    );
+    return result.rows[0].exists;
+}
+
+async function verifyColumnExists(client, tableName, columnNameOrList) {
+    if (Array.isArray(columnNameOrList)) {
+        const result = await client.query(
+            `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = ANY($2));`,
+            [tableName, columnNameOrList]
+        );
+        return result.rows[0].exists;
+    }
+
+    const result = await client.query(
+        `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2);`,
+        [tableName, columnNameOrList]
+    );
+    return result.rows[0].exists;
+}
+
 async function verifySchema() {
     const client = await pool.connect();
-    console.log('🔗 Connecting to Neon Database for Schema Verification...');
+    console.log('🔗 Connecting to Supabase for schema verification...');
 
     const issues = [];
     const successes = [];
 
     try {
-        // 1. Check master_asset_folders table
-        const foldersTable = await client.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'master_asset_folders'
-            );
-        `);
-        if (foldersTable.rows[0].exists) {
-            successes.push("Table 'master_asset_folders' exists.");
-        } else {
-            issues.push("MISSING Table: 'master_asset_folders'");
-        }
-
-        // 2. Check columns in assets_tanah
-        const tanahColumnsReq = ['folder_id', 'source_file', 'jenis_bmn', 'kode_barang', 'nup'];
-        for (const col of tanahColumnsReq) {
-            const check = await client.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.columns 
-                    WHERE table_name = 'assets_tanah' 
-                    AND column_name = $1
-                );
-            `, [col]);
-            if (check.rows[0].exists) {
-                successes.push(`Column 'assets_tanah.${col}' exists.`);
-            } else {
-                issues.push(`MISSING Column: 'assets_tanah.${col}'`);
+        for (const [table, columns] of Object.entries(requiredSchema)) {
+            const exists = await verifyTableExists(client, table);
+            if (!exists) {
+                issues.push(`MISSING TABLE: ${table}`);
+                continue;
             }
-        }
+            successes.push(`Table ${table} exists.`);
 
-        // 3. Check columns in assets_bangunan
-        const bangunanColumnsReq = ['folder_id', 'source_file'];
-        for (const col of bangunanColumnsReq) {
-            const check = await client.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.columns 
-                    WHERE table_name = 'assets_bangunan' 
-                    AND column_name = $1
-                );
-            `, [col]);
-            if (check.rows[0].exists) {
-                successes.push(`Column 'assets_bangunan.${col}' exists.`);
-            } else {
-                issues.push(`MISSING Column: 'assets_bangunan.${col}'`);
+            for (const column of columns) {
+                const hasColumn = await verifyColumnExists(client, table, column);
+                const label = Array.isArray(column) ? column.join(' or ') : column;
+                if (!hasColumn) {
+                    issues.push(`MISSING COLUMN: ${table}.${label}`);
+                } else {
+                    successes.push(`Column ${table}.${label} exists.`);
+                }
             }
         }
 
         console.log('\n--- Verification Results ---');
-        successes.forEach(s => console.log('✅ ' + s));
+        successes.forEach((msg) => console.log('✅ ' + msg));
 
         if (issues.length > 0) {
             console.log('\n❌ FOUND ISSUES:');
-            issues.forEach(i => console.log(i));
-            console.log('\n⚠️ Database structure is NOT in sync with the latest features.');
+            issues.forEach((issue) => console.log('   - ' + issue));
+            console.log('\n⚠️ Database structure is NOT fully synced with the canonical schema.');
         } else {
-            console.log('\n✨ Database structure is FULLY SYNCED with all new features (Folders, Source File, BMN).');
+            console.log('\n✨ Database structure is fully synced with the canonical schema.');
         }
-
     } catch (error) {
-        console.error('Error verifying schema:', error);
+        console.error('❌ Error verifying schema:', error);
     } finally {
         client.release();
         await pool.end();

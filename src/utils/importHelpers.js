@@ -98,7 +98,7 @@ export const downloadTemplate = (type = 'tanah') => {
             'Tanah',
             'BMN-TN-001',
             '12345678901234567890123',
-            'Tanah Kantor Pusat Kodaeral 3',
+            'Tanah Kantor Pusat NEXIS-3',
             'SHM-001/2020',
             'Baik',
             '2020-01-15',

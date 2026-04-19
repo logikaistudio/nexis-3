@@ -26,7 +26,6 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
     const [showDisaster, setShowDisaster] = useState(true)
     const [dashboardData, setDashboardData] = useState({
         faslan: {
-            totalTanah: 0,
             totalKapling: 0,
             totalPemanfaatan: 0,
             totalKompensasi: 0
@@ -52,8 +51,7 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
                 const base = import.meta.env.PROD ? '' : 'http://localhost:3001'
 
                 // Fetch Faslan Data
-                const [tanah, kapling, pemanfaatan, faslabuh] = await Promise.all([
-                    fetch(`${base}/api/assets/tanah`).then(r => r.json()).catch(() => []),
+                const [kapling, pemanfaatan, faslabuh] = await Promise.all([
                     fetch(`${base}/api/assets/kapling`).then(r => r.json()).catch(() => []),
                     fetch(`${base}/api/assets/pemanfaatan`).then(r => r.json()).catch(() => []),
                     fetch(`${base}/api/faslabuh`).then(r => r.json()).catch(() => [])
@@ -74,7 +72,6 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
 
                 setDashboardData({
                     faslan: {
-                        totalTanah: tanah.length,
                         totalKapling: kapling.length,
                         totalPemanfaatan: pemanfaatan.length,
                         totalKompensasi
@@ -118,15 +115,6 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
     // Main stats for top cards
     const mainStats = [
         {
-            label: 'Total Aset Tanah',
-            value: formatNumber(dashboardData.faslan.totalTanah),
-            unit: 'Lokasi',
-            icon: '📍',
-            color: '#0ea5e9',
-            onClick: () => setCurrentPage('faslan-tanah')
-        },
-
-        {
             label: 'Pemanfaatan Aset',
             value: formatNumber(dashboardData.faslan.totalPemanfaatan),
             unit: 'Kerjasama Aktif',
@@ -151,7 +139,6 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
             icon: '🏛️',
             color: '#003366',
             items: [
-                { label: 'Aset Tanah', value: dashboardData.faslan.totalTanah, page: 'faslan-tanah' },
                 { label: 'Aset Kapling', value: dashboardData.faslan.totalKapling, page: 'faslan-kapling' },
                 { label: 'Pemanfaatan Aset', value: dashboardData.faslan.totalPemanfaatan, page: 'faslan-kerjasama' }
             ]
@@ -210,7 +197,7 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 className="page-title">Dashboard Pimpinan</h1>
-                    <p className="page-subtitle">Ringkasan Eksekutif Data Logistik & Fasilitas Kodaeral 3 Jakarta</p>
+                    <p className="page-subtitle">Ringkasan Eksekutif Data Logistik & Fasilitas NEXIS-3 Jakarta</p>
                 </div>
                 <LiveClock />
             </div>
@@ -269,7 +256,7 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
                                 <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#1e293b', fontWeight: '800', lineHeight: 1.2 }}>
-                                    🗺️ Peta Operasi & Kebencanaan Kodaeral 3
+                                    🗺️ Peta Operasi & Kebencanaan NEXIS-3
                                 </h3>
                                 <button 
                                     onClick={() => setShowDisaster(!showDisaster)}
@@ -412,7 +399,6 @@ const DashboardPimpinan = ({ setCurrentPage }) => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     {[
                         { label: 'Peta Faslan', icon: '🗺️', page: 'faslan-peta', color: '#0ea5e9' },
-                        { label: 'Aset Tanah', icon: '⛰️', page: 'faslan-tanah', color: '#10b981' },
                         { label: 'Pemanfaatan Aset', icon: '🤝', page: 'faslan-kerjasama', color: '#f59e0b' },
                         { label: 'Faslabuh', icon: '⚓', page: 'faslan-faslabuh', color: '#0066cc' },
                         { label: 'Master Data', icon: '⚙️', page: 'master-asset', color: '#64748b' }
