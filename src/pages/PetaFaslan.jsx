@@ -1251,7 +1251,7 @@ function PetaFaslan({ isDashboard = false, showDisaster = true }) {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '6px' }}>
                                                 <div>
                                                     <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>Kondisi</div>
-                                                    <div style={{ fontSize: '13px', color: '#4b5563', fontWeight: '600', color: asset.kondisi === 'Siap' ? 'green' : 'red' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: asset.kondisi === 'Siap' ? 'green' : 'red' }}>
                                                         {asset.kondisi || '-'}
                                                     </div>
                                                 </div>

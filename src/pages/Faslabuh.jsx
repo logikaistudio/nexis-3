@@ -349,7 +349,7 @@ function Faslabuh() {
     const handleExportTemplate = () => {
         const templateHeaders = {
             'No': '',
-            'No': '',
+            'No. Urut': '',
             'Lokasi': '',
             'Alamat': '',
             'Wilayah': '',
