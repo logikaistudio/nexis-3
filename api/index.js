@@ -81,8 +81,8 @@ app.get('/api/setup', async (req, res) => {
             status: 'success',
             message: 'Database setup completed',
             credentials: {
-                username: 'kodaeral',
-                password: 'kodaeral'
+                username: 'superadmin',
+                password: 'password123'
             }
         });
     } catch (err) {
@@ -135,7 +135,7 @@ app.post('/api/auth/login', async (req, res) => {
                 // Create default admin user
                 await pool.query(`
                     INSERT INTO users (name, email, role, status, username, password)
-                    VALUES ('Administrator', 'admin@nexis-3.com', 'Super Admin', 'Active', 'kodaeral', 'kodaeral')
+                    VALUES ('Super Administrator', 'superadmin@nexis-3.com', 'Super Admin', 'Active', 'superadmin', 'password123')
                     ON CONFLICT (username) DO NOTHING;
                 `);
             }
@@ -202,7 +202,7 @@ app.get('/api/users', async (req, res) => {
                 // Create default admin user
                 await pool.query(`
                     INSERT INTO users (name, email, role, status, username, password)
-                    VALUES ('Administrator', 'admin@nexis-3.com', 'Super Admin', 'Active', 'kodaeral', 'kodaeral')
+                    VALUES ('Super Administrator', 'superadmin@nexis-3.com', 'Super Admin', 'Active', 'superadmin', 'password123')
                     ON CONFLICT (username) DO NOTHING;
                 `);
             }
